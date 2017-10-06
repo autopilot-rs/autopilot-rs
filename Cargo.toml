@@ -1,0 +1,13 @@
+[package]
+name = "autopilot"
+version = "0.1.0"
+authors = ["Michael Sanders <michael.sanders@fastmail.com>"]
+
+[dependencies]
+image = "*"
+libc = "*"
+rand = "*"
+
+#[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "*"
+core-graphics = { git = "https://github.com/servo/core-graphics-rs.git" }
