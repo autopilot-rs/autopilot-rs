@@ -10,4 +10,5 @@ rand = "*"
 
 #[target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "*"
-core-graphics = { git = "https://github.com/servo/core-graphics-rs.git" }
+core-graphics = { git = "https://github.com/servo/core-foundation-rs.git" }
+cocoa = { git = "https://github.com/servo/core-foundation-rs.git" }

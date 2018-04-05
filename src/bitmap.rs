@@ -6,9 +6,17 @@ extern crate image;
 
 use geometry::{Point, Rect, Size};
 use screen;
-use self::image::{DynamicImage, GenericImage, ImageError, ImageResult, Pixel, Rgba, RgbaImage};
+use image::{DynamicImage, GenericImage, ImageError, ImageFormat, ImageResult, Pixel, Rgba,
+            RgbaImage};
 use libc::size_t;
+use libc;
 
+#[cfg(target_os = "macos")]
+use cocoa::appkit::{NSImage, NSPasteboard};
+#[cfg(target_os = "macos")]
+use cocoa::base::nil;
+#[cfg(target_os = "macos")]
+use cocoa::foundation::{NSArray, NSData};
 #[cfg(target_os = "macos")]
 use core_graphics::base::CGFloat;
 #[cfg(target_os = "macos")]
@@ -47,9 +55,9 @@ impl Bitmap {
 
     /// Copies image to pasteboard. Currently only supported on Windows and
     /// macOS.
-    pub fn copy_to_pasteboard(&self) {
+    pub fn copy_to_pasteboard(&self) -> ImageResult<()> {
         if cfg!(target_os = "macos") {
-            self.macos_copy_to_pboard();
+            self.macos_copy_to_pasteboard()
         } else {
             panic!("Unsupported OS");
         }
@@ -327,7 +335,26 @@ impl Bitmap {
     }
 
     #[cfg(target_os = "macos")]
-    fn macos_copy_to_pboard(&self) {}
+    fn macos_copy_to_pasteboard(&self) -> ImageResult<()> {
+        let mut buffer: Vec<u8> = Vec::new();
+        let result = self.image.save(&mut buffer, ImageFormat::PNG);
+        match result {
+            Ok(_) => unsafe {
+                let data = NSData::dataWithBytesNoCopy_length_(
+                    nil,
+                    buffer.as_ptr() as *const libc::c_void,
+                    buffer.len() as u64,
+                );
+                let image = NSImage::initWithData_(NSImage::alloc(nil), data);
+                let objects = NSArray::arrayWithObject(nil, image);
+                let pasteboard = NSPasteboard::generalPasteboard(nil);
+                pasteboard.clearContents();
+                pasteboard.writeObjects(objects);
+                result
+            },
+            _ => result,
+        }
+    }
 }
 
 /// Returns true if the given two colors are sufficiently similar.
