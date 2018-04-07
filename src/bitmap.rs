@@ -10,6 +10,7 @@ use image::{DynamicImage, GenericImage, ImageError, ImageFormat, ImageResult, Pi
             RgbaImage};
 use libc::size_t;
 use libc;
+use std::fmt;
 
 #[cfg(target_os = "macos")]
 use cocoa::appkit::{NSImage, NSPasteboard};
@@ -28,10 +29,17 @@ use core_graphics::geometry::{CGRect, CGSize, CG_ZERO_POINT};
 #[cfg(target_os = "macos")]
 use core_graphics::image::{CGImage, CGImageAlphaInfo, CGImageByteOrderInfo};
 
+#[derive(Clone)]
 pub struct Bitmap {
     pub image: DynamicImage,
     pub size: Size,
     pub scale: f64,
+}
+
+impl fmt::Debug for Bitmap {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Bitmap {{ size: {}, scale: {} }}", self.size, self.scale)
+    }
 }
 
 impl Bitmap {
@@ -132,9 +140,9 @@ impl Bitmap {
     }
 
     /// Returns count of color in bitmap. Functionally equivalent to:
-    ///
-    ///     find_every_color(color, tolerance, rect, start_point).count()
-    ///
+    /// ```rust,ignore
+    /// find_every_color(color, tolerance, rect, start_point).count()
+    /// ```
     pub fn count_of_color(
         &self,
         needle: Rgba<u8>,
@@ -213,7 +221,9 @@ impl Bitmap {
 
     /// Returns count of occurrences of `needle` in `bmp`. Functionally equivalent to:
     ///
-    ///     find_every_bitmap(color, tolerance, rect, start_point).count()
+    /// ```rust,ignore
+    /// find_every_bitmap(color, tolerance, rect, start_point).count()
+    /// ```
     ///
     pub fn count_of_bitmap(
         &self,
@@ -300,13 +310,15 @@ impl Bitmap {
         // http://bit.ly/1EIEIfr.
         let start_point = start_point.scaled(self.multiplier()).round();
         let rect = rect.scaled(self.multiplier()).round();
+        let mut start_y = start_point.y;
         for x in start_point.x as u64..rect.max_x() as u64 {
-            for y in start_point.y as u64..rect.max_y() as u64 {
+            for y in start_y as u64..rect.max_y() as u64 {
                 let point = Point::new(x as f64, y as f64);
                 if predicate(point) {
                     return Some(point);
                 }
             }
+            start_y = rect.origin.y;
         }
 
         None
@@ -361,8 +373,13 @@ impl Bitmap {
 ///
 /// Tolerance is defined as a double in the range from 0 to 1, where 0 is an
 /// exact match and 1 matches anything.
+#[inline]
 fn colors_match(c1: Rgba<u8>, c2: Rgba<u8>, tolerance: f64) -> bool {
-    if tolerance <= 0.0 {
+    assert!(
+        tolerance >= 0.0 && tolerance <= 1.0,
+        "Tolerance must be between 0 and 1."
+    );
+    if tolerance == 0.0 {
         return c1 == c2;
     }
 
@@ -436,4 +453,111 @@ fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
     // }
 
     Ok(bmp)
+}
+
+#[cfg(test)]
+mod tests {
+    use bitmap::{colors_match, Bitmap};
+    use image::{DynamicImage, Rgba, RgbaImage};
+    use geometry::{Point, Rect, Size};
+    use quickcheck::{Arbitrary, Gen, TestResult};
+    use rand::{thread_rng, Rng};
+    use image::GenericImage;
+
+    impl Arbitrary for Bitmap {
+        fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
+            let xs = Vec::<u8>::arbitrary(g);
+            // let scale = g.choose(&[1.0, 2.0]).unwrap();
+            let scale = 1.0;
+            let width = (xs.len() as f64 / 4.0).floor().sqrt();
+            let image = RgbaImage::from_raw(width as u32, width as u32, xs).unwrap();
+            let dynimage = DynamicImage::ImageRgba8(image);
+            return Bitmap::new(dynimage, Some(scale.clone()));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_colors_match_low_tolerance() {
+        colors_match(Rgba([0, 0, 0, 255]), Rgba([0, 0, 0, 255]), -0.1);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_colors_match_high_tolerance() {
+        colors_match(Rgba([0, 0, 0, 255]), Rgba([0, 0, 0, 255]), 1.1);
+    }
+
+    quickcheck! {
+        fn finds_cropped_bitmap(haystack: Bitmap) -> TestResult {
+            if haystack.size.width == 0.0 {
+                return TestResult::discard();
+            }
+
+            let mut rng = thread_rng();
+            let crop_scale: f64 = rng.gen_range(0.1, 1.0);
+            let offset_percentage: f64 = rng.gen_range(0.0, 1.0);
+            let mut cropped_width = (haystack.size.width * crop_scale).round();
+            let mut cropped_height = (haystack.size.height * crop_scale).round();
+            if cropped_width < 1.0 {
+                cropped_width = 1.0;
+            }
+            if cropped_height < 1.0 {
+                cropped_height = 1.0;
+            }
+            let offset_pt = Point::new(
+                (haystack.size.width - cropped_width) * offset_percentage,
+                (haystack.size.height - cropped_height) * offset_percentage
+            ).round();
+            let needle = haystack.clone().cropped(Rect::new(
+                offset_pt,
+                Size::new(cropped_width, cropped_height)
+            )).unwrap();
+            let pt_a = haystack.find_bitmap(&needle, None, None, None);
+            let pt_b = haystack.find_bitmap(&needle, None, None, Some(offset_pt));
+            return TestResult::from_bool(pt_a.is_some() &&
+                                         pt_b.is_some() &&
+                                         pt_b.unwrap() == offset_pt);
+        }
+    }
+
+    quickcheck! {
+        fn skips_inverted_bitmap(haystack: Bitmap) -> TestResult {
+            if haystack.size.width == 0.0 {
+                return TestResult::discard();
+            }
+
+            let mut inverted = haystack.image.clone();
+            inverted.invert();
+            let needle = Bitmap::new(inverted, None);
+            let pt = haystack.find_bitmap(&needle, None, None, None);
+            return TestResult::from_bool(pt.is_none());
+        }
+    }
+
+    quickcheck! {
+        fn count_of_tiled_bitmap(tile: Bitmap) -> TestResult {
+            if tile.size.width == 0.0 {
+                return TestResult::discard();
+            }
+            let mut haystack_img = DynamicImage::new_rgba8(
+                tile.size.width as u32 * 2 + 1,
+                tile.size.height as u32 * 2 + 1
+            );
+            for x in 0..tile.size.width as u32 * 2 {
+                for y in 0..tile.size.height as u32 * 2 {
+                    let tile_x = x % tile.size.width as u32;
+                    let tile_y = y % tile.size.height as u32;
+                    haystack_img.put_pixel(
+                        x as u32,
+                        y as u32,
+                        tile.image.get_pixel(tile_x, tile_y)
+                    );
+                }
+            }
+
+            let haystack = Bitmap::new(haystack_img, Some(tile.scale));
+            return TestResult::from_bool(haystack.count_of_bitmap(&tile, None, None, None) >= 4);
+        }
+    }
 }

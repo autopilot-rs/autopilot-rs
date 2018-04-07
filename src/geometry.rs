@@ -1,18 +1,18 @@
 use std::fmt;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Size {
     pub width: f64,
     pub height: f64,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Rect {
     pub origin: Point,
     pub size: Size,
@@ -88,9 +88,8 @@ impl Rect {
 
     #[inline]
     pub fn is_point_visible(&self, point: Point) -> bool {
-        point.x >= self.origin.x && point.y >= self.origin.y
-            && point.x + self.origin.x < self.size.width
-            && point.y + self.origin.y < self.size.height
+        point.x >= self.origin.x && point.y >= self.origin.y && point.x < self.max_x()
+            && point.y < self.max_y()
     }
 
     #[inline]
@@ -111,10 +110,10 @@ impl Rect {
     }
 
     pub fn iter_point(&self, point: Point) -> Option<Point> {
-        if point.x + 1.0 <= self.max_x() {
-            Some(Point::new(self.origin.x + 1.0, point.y + 1.0))
-        } else if point.y + 1.0 <= self.max_y() {
-            Some(Point::new(self.origin.x, point.y + 1.0))
+        if point.y + 1.0 < self.max_y() {
+            Some(Point::new(point.x, point.y + 1.0))
+        } else if point.x + 1.0 < self.max_x() {
+            Some(Point::new(point.x + 1.0, self.origin.y))
         } else {
             None
         }

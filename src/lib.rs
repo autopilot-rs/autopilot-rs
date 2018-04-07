@@ -9,6 +9,11 @@ pub mod screen;
 
 extern crate image;
 extern crate libc;
+extern crate rand;
+
+#[cfg(test)]
+#[macro_use]
+extern crate quickcheck;
 
 #[cfg(target_os = "macos")]
 extern crate cocoa;
