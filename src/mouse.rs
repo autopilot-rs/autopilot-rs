@@ -3,12 +3,12 @@
 //!
 //! Unless otherwise stated, coordinates are those of a screen coordinate
 //! system, where the origin is at the top left.
-extern crate rand;
 
 use geometry::Point;
 use screen;
-use self::rand::Rng;
-use std::{thread, time};
+use rand;
+use rand::Rng;
+use std;
 
 #[cfg(target_os = "macos")]
 use core_graphics::event::{CGEvent, CGEventTapLocation, CGEventType, CGMouseButton};
@@ -18,6 +18,11 @@ use core_graphics::event_source::CGEventSource;
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::CGPoint;
+
+#[cfg(target_os = "linux")]
+use x11;
+#[cfg(target_os = "linux")]
+use internal;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Button {
@@ -66,7 +71,7 @@ pub fn smooth_move(destination: Point) -> Result<(), MouseError> {
 
         try!(move_to(position));
         let duration: u64 = rand::thread_rng().gen_range(1, 3);
-        thread::sleep(time::Duration::from_millis(duration));
+        std::thread::sleep(std::time::Duration::from_millis(duration));
     }
 
     Ok(())
@@ -77,7 +82,7 @@ pub fn smooth_move(destination: Point) -> Result<(), MouseError> {
 pub fn click(button: Button) {
     let ms: u64 = rand::thread_rng().gen_range(50, 100);
     toggle(button, true);
-    thread::sleep(time::Duration::from_millis(ms));
+    std::thread::sleep(std::time::Duration::from_millis(ms));
     toggle(button, true);
 }
 
@@ -88,31 +93,19 @@ pub fn move_to(point: Point) -> Result<(), MouseError> {
     if !screen::is_point_visible(point) {
         Err(MouseError::OutOfBounds)
     } else {
-        if cfg!(target_os = "macos") {
-            macos_move_to(point);
-            Ok(())
-        } else {
-            panic!("Unsupported OS");
-        }
+        system_move_to(point);
+        Ok(())
     }
 }
 
 /// Returns the current position of the mouse cursor.
 pub fn location() -> Point {
-    if cfg!(target_os = "macos") {
-        macos_location()
-    } else {
-        panic!("Unsupported OS");
-    }
+    system_location()
 }
 
 /// Holds down or releases a mouse button in the current position.
 pub fn toggle(button: Button, down: bool) {
-    if cfg!(target_os = "macos") {
-        macos_toggle(button, down);
-    } else {
-        panic!("Unsupported OS");
-    }
+    system_toggle(button, down);
 }
 
 #[cfg(target_os = "macos")]
@@ -143,7 +136,7 @@ impl From<Button> for CGMouseButton {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_move_to(point: Point) {
+fn system_move_to(point: Point) {
     let point = CGPoint::from(point);
     let source = CGEventSource::new(HIDSystemState).unwrap();
     let event =
@@ -152,17 +145,109 @@ fn macos_move_to(point: Point) {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_location() -> Point {
+fn system_location() -> Point {
     let source = CGEventSource::new(HIDSystemState).unwrap();
     let event = CGEvent::new(source).unwrap();
     Point::from(event.location())
 }
 
 #[cfg(target_os = "macos")]
-fn macos_toggle(button: Button, down: bool) {
+fn system_toggle(button: Button, down: bool) {
     let point = CGPoint::from(location());
     let source = CGEventSource::new(HIDSystemState).unwrap();
     let event_type = button.event_type(down);
     let event = CGEvent::new_mouse_event(source, event_type, point, CGMouseButton::from(button));
     event.unwrap().post(CGEventTapLocation::HID);
+}
+
+#[cfg(target_os = "linux")]
+impl From<Button> for XButton {
+    fn from(button: Button) -> XButton {
+        match button {
+            Button::Left => X_BUTTON_LEFT,
+            Button::Middle => X_BUTTON_MIDDLE,
+            Button::Right => X_BUTTON_RIGHT,
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn system_move_to(point: Point) {
+    use scopeguard::guard;
+    internal::X_MAIN_DISPLAY.with(|display| unsafe {
+        let root_window = guard(x11::xlib::XDefaultRootWindow(*display), |w| {
+            x11::xlib::XDestroyWindow(*display, *w);
+        });
+        x11::xlib::XWarpPointer(
+            *display,
+            0,
+            *root_window,
+            0,
+            0,
+            0,
+            0,
+            point.x as i32,
+            point.y as i32,
+        );
+        x11::xlib::XFlush(*display);
+    });
+}
+
+#[cfg(target_os = "linux")]
+fn system_location() -> Point {
+    internal::X_MAIN_DISPLAY.with(|display| unsafe {
+        let root_window = x11::xlib::XDefaultRootWindow(*display);
+        let mut x: i32 = 0;
+        let mut y: i32 = 0;
+        let mut unused_a: x11::xlib::Window = 0;
+        let mut unused_b: x11::xlib::Window = 0;
+        let mut unused_c: i32 = 0;
+        let mut unused_d: i32 = 0;
+        let mut unused_e: u32 = 0;
+        x11::xlib::XQueryPointer(
+            *display,
+            root_window,
+            &mut unused_a,
+            &mut unused_b,
+            &mut x,
+            &mut y,
+            &mut unused_c,
+            &mut unused_d,
+            &mut unused_e,
+        );
+        Point::new(x as f64, y as f64)
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn system_toggle(button: Button, down: bool) {
+    internal::X_MAIN_DISPLAY.with(|display| unsafe {
+        XTestFakeButtonEvent(
+            *display,
+            XButton::from(button),
+            down as i32,
+            x11::xlib::CurrentTime,
+        );
+        x11::xlib::XFlush(*display);
+    });
+}
+
+#[cfg(target_os = "linux")]
+type XButton = u32;
+
+#[cfg(target_os = "linux")]
+const X_BUTTON_LEFT: XButton = 1;
+#[cfg(target_os = "linux")]
+const X_BUTTON_MIDDLE: XButton = 2;
+#[cfg(target_os = "linux")]
+const X_BUTTON_RIGHT: XButton = 3;
+
+#[cfg(target_os = "linux")]
+extern "C" {
+    fn XTestFakeButtonEvent(
+        display: *mut x11::xlib::Display,
+        button: u32,
+        is_press: i32,
+        delay: x11::xlib::Time,
+    ) -> i32;
 }

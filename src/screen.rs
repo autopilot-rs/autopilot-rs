@@ -6,23 +6,19 @@ use self::image::{GenericImage, ImageResult, Rgba};
 
 #[cfg(target_os = "macos")]
 use core_graphics::display::CGDisplay;
+#[cfg(target_os = "linux")]
+use internal;
+#[cfg(target_os = "linux")]
+use x11;
 
 /// Returns the size of the main screen.
 pub fn size() -> Size {
-    if cfg!(target_os = "macos") {
-        macos_size()
-    } else {
-        panic!("Unsupported OS");
-    }
+    system_size()
 }
 
 /// Returns the scale of the main screen.
 pub fn scale() -> f64 {
-    if cfg!(target_os = "macos") {
-        macos_scale()
-    } else {
-        panic!("Unsupported OS");
-    }
+    system_scale()
 }
 
 /// Returns whether the given point is inside the main screen boundaries.
@@ -46,12 +42,27 @@ pub fn get_color(point: Point) -> ImageResult<Rgba<u8>> {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_size() -> Size {
+fn system_size() -> Size {
     Size::from(CGDisplay::main().bounds().size)
 }
 
 #[cfg(target_os = "macos")]
-fn macos_scale() -> f64 {
+fn system_scale() -> f64 {
     let mode = CGDisplay::main().display_mode().unwrap();
     mode.pixel_height() as f64 / mode.height() as f64
+}
+
+#[cfg(target_os = "linux")]
+fn system_size() -> Size {
+    internal::X_MAIN_DISPLAY.with(|display| unsafe {
+        let screen = x11::xlib::XDefaultScreen(*display);
+        let width = x11::xlib::XDisplayWidth(*display, screen) as f64;
+        let height = x11::xlib::XDisplayHeight(*display, screen) as f64;
+        Size::new(width, height)
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn system_scale() -> f64 {
+    1.0
 }

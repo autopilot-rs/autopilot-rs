@@ -1,9 +1,14 @@
+#[cfg(target_os = "macos")]
 use geometry::{Point, Rect, Size};
 
 #[cfg(target_os = "macos")]
 use core_graphics::base::CGFloat;
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::{CGPoint, CGRect, CGSize};
+#[cfg(target_os = "linux")]
+use std;
+#[cfg(target_os = "linux")]
+use x11;
 
 #[cfg(target_os = "macos")]
 impl From<Point> for CGPoint {
@@ -42,3 +47,7 @@ impl From<Rect> for CGRect {
         }
     }
 }
+
+#[cfg(target_os = "linux")]
+thread_local!(pub static X_MAIN_DISPLAY: *mut x11::xlib::Display =
+    unsafe { x11::xlib::XOpenDisplay(std::ptr::null()) });

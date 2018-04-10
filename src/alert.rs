@@ -8,7 +8,7 @@ use core_foundation::string::{CFString, CFStringRef};
 #[cfg(target_os = "macos")]
 use core_foundation::url::CFURLRef;
 
-use std::ptr;
+use std;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Response {
@@ -34,15 +34,32 @@ pub fn alert(
     } else {
         default_button.unwrap()
     };
-    if cfg!(target_os = "macos") {
-        macos_alert(title, msg, default_button, cancel_button).unwrap_or(Response::Cancel)
-    } else {
-        panic!("Unsupported OS")
+
+    system_alert(title, msg, default_button, cancel_button).unwrap_or(Response::Cancel)
+}
+
+#[cfg(target_os = "macos")]
+impl Response {
+    fn from(value: CFOptionFlags) -> Option<Response> {
+        match value {
+            CF_USER_NOTIFICATION_DEFAULT_RESPONSE => Some(Response::Default),
+            CF_USER_NOTIFICATION_CANCEL_RESPONSE | CF_USER_NOTIFICATION_ALTERNATE_RESPONSE => {
+                Some(Response::Cancel)
+            }
+            _ => None,
+        }
     }
 }
 
 #[cfg(target_os = "macos")]
-fn macos_alert(
+const CF_USER_NOTIFICATION_DEFAULT_RESPONSE: CFOptionFlags = 0;
+#[cfg(target_os = "macos")]
+const CF_USER_NOTIFICATION_ALTERNATE_RESPONSE: CFOptionFlags = 1;
+#[cfg(target_os = "macos")]
+const CF_USER_NOTIFICATION_CANCEL_RESPONSE: CFOptionFlags = 3;
+
+#[cfg(target_os = "macos")]
+fn system_alert(
     title: &str,
     msg: &str,
     default_button: &str,
@@ -56,18 +73,18 @@ fn macos_alert(
         CFUserNotificationDisplayAlert(
             0.0,
             1,
-            ptr::null(),
-            ptr::null(),
-            ptr::null(),
+            std::ptr::null(),
+            std::ptr::null(),
+            std::ptr::null(),
             title.as_concrete_TypeRef(),
             msg.as_concrete_TypeRef(),
             default_button.as_concrete_TypeRef(),
             if cancel_button.unwrap_or("").is_empty() {
-                ptr::null()
+                std::ptr::null()
             } else {
                 CFString::new(cancel_button.unwrap()).as_concrete_TypeRef()
             },
-            ptr::null(),
+            std::ptr::null(),
             &mut flags,
         )
     };
@@ -79,21 +96,51 @@ fn macos_alert(
     }
 }
 
-impl Response {
-    fn from(value: CFOptionFlags) -> Option<Response> {
-        match value {
-            CF_USER_NOTIFICATION_DEFAULT_RESPONSE => Some(Response::Default),
-            CF_USER_NOTIFICATION_CANCEL_RESPONSE | CF_USER_NOTIFICATION_ALTERNATE_RESPONSE => {
-                Some(Response::Cancel)
+#[cfg(target_os = "linux")]
+fn system_alert(
+    title: &str,
+    msg: &str,
+    default_button: &str,
+    cancel_button: Option<&str>,
+) -> Option<Response> {
+    let button_list: &str = &cancel_button
+        .map(|cancel_text| format!("{}:2,{}:3", default_button, cancel_text))
+        .unwrap_or(format!("{}:2", default_button));
+    let args = [
+        msg,
+        "-title",
+        title,
+        "-center",
+        "-buttons",
+        button_list,
+        "-default",
+        default_button,
+    ];
+    let message_programs = ["gmessage", "gxmessage", "kmessage", "xmessage"];
+    for program in message_programs.iter() {
+        match std::process::Command::new(program)
+            .args(&args)
+            .spawn()
+            .and_then(|process| process.wait_with_output())
+        {
+            Ok(output) => {
+                return output.status.code().and_then({
+                    |code| {
+                        if code == 2 {
+                            Some(Response::Default)
+                        } else {
+                            Some(Response::Cancel)
+                        }
+                    }
+                })
             }
-            _ => None,
+            _ => continue,
         }
     }
-}
 
-const CF_USER_NOTIFICATION_DEFAULT_RESPONSE: CFOptionFlags = 0;
-const CF_USER_NOTIFICATION_ALTERNATE_RESPONSE: CFOptionFlags = 1;
-const CF_USER_NOTIFICATION_CANCEL_RESPONSE: CFOptionFlags = 3;
+    eprintln!("xmessage or equivalent not found");
+    None
+}
 
 #[cfg(target_os = "macos")]
 extern "C" {

@@ -10,12 +10,16 @@ use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGEventTyp
 use core_graphics::event_source::CGEventSource;
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
+#[cfg(target_os = "linux")]
+use internal;
+#[cfg(target_os = "linux")]
+use x11;
 
 use self::rand::Rng;
-use std::{thread, time};
+use std;
 
 /// Device-independent modifier flags.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Flag {
     Shift,
     Control,
@@ -25,16 +29,10 @@ pub enum Flag {
     // Special key identifiers.
     Help,
     SecondaryFn,
-
-    /// Identifies key events from numeric keypad area on extended keyboards.
-    NumericPad,
-
-    /// Indicates if mouse/pen movement events are not being coalesced.
-    NonCoalesced,
 }
 
 /// Device-independent key codes.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum KeyCode {
     F1,
     F2,
@@ -70,8 +68,13 @@ pub enum KeyCode {
 pub trait KeyCodeConvertible {
     #[cfg(target_os = "macos")]
     fn code(&self) -> CGKeyCode;
+    #[cfg(target_os = "linux")]
+    fn code(&self) -> XKeyCode;
     fn character(&self) -> Option<char> {
         None
+    }
+    fn flags(&self) -> &[Flag] {
+        &[]
     }
 }
 
@@ -103,16 +106,16 @@ pub fn type_string(string: &str, wpm: Option<f64>, noise: Option<f64>, flags: &[
         };
 
         tap(Character(c), flags);
-        thread::sleep(time::Duration::from_millis(ms_per_character + noise));
+        std::thread::sleep(std::time::Duration::from_millis(ms_per_character + noise));
     }
 }
 
 /// Convenience wrapper around `toggle()` that holds down and then releases the
 /// given key and modifier flags.
 pub fn tap<T: KeyCodeConvertible + Copy>(key: T, flags: &[Flag]) {
-    let ms: u64 = rand::thread_rng().gen_range(10, 20);
+    let ms: u64 = rand::thread_rng().gen_range(5, 20);
     toggle(key, true, flags);
-    thread::sleep(time::Duration::from_millis(ms));
+    std::thread::sleep(std::time::Duration::from_millis(ms));
     toggle(key, false, flags);
 }
 
@@ -120,33 +123,15 @@ pub fn tap<T: KeyCodeConvertible + Copy>(key: T, flags: &[Flag]) {
 /// not. Characters are converted to a keycode corresponding to the current
 /// keyboard layout.
 pub fn toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
-    if cfg!(target_os = "macos") {
-        toggle_macos(key, down, flags);
-    } else {
-        panic!("Unsupported OS");
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn toggle_macos<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
-    use core_graphics::event::CGEventType::*;
-    let source = CGEventSource::new(HIDSystemState).unwrap();
-
-    if flags.len() == 0 {
-        if let Some(character) = key.character() {
-            let mut buf = [0; 2];
-            let event = CGEvent::new_keyboard_event(source, 0, down).unwrap();
-            event.set_string_from_utf16_unchecked(character.encode_utf16(&mut buf));
-            event.post(CGEventTapLocation::HID);
-            return;
+    let key_flags = key.character().map(|c| flags_for_char(c)).unwrap_or(&[]);
+    let mut appended_flags: Vec<Flag> = Vec::with_capacity(flags.len() + key_flags.len());
+    appended_flags.extend_from_slice(flags);
+    for flag in key_flags.iter() {
+        if !flags.contains(flag) {
+            appended_flags.push(*flag);
         }
     }
-
-    let event = CGEvent::new_keyboard_event(source, key.code(), down).unwrap();
-    let event_type: CGEventType = if down { KeyDown } else { KeyUp };
-    event.set_type(event_type);
-    event.set_flags(event_mask_for_flags(flags));
-    event.post(CGEventTapLocation::HID);
+    system_toggle(key, down, &appended_flags);
 }
 
 #[cfg(target_os = "macos")]
@@ -158,6 +143,67 @@ fn char_to_key_code(character: char) -> CGKeyCode {
     event.get_integer_value_field(EventField::KEYBOARD_EVENT_KEYCODE) as CGKeyCode
 }
 
+#[cfg(target_os = "linux")]
+fn char_to_key_code(character: char) -> XKeyCode {
+    match character {
+        ' ' => x11::keysym::XK_space as XKeyCode,
+        '!' => x11::keysym::XK_exclam as XKeyCode,
+        '#' => x11::keysym::XK_numbersign as XKeyCode,
+        '$' => x11::keysym::XK_dollar as XKeyCode,
+        '%' => x11::keysym::XK_percent as XKeyCode,
+        '&' => x11::keysym::XK_ampersand as XKeyCode,
+        '(' => x11::keysym::XK_parenleft as XKeyCode,
+        ')' => x11::keysym::XK_parenright as XKeyCode,
+        '*' => x11::keysym::XK_asterisk as XKeyCode,
+        '+' => x11::keysym::XK_plus as XKeyCode,
+        ',' => x11::keysym::XK_comma as XKeyCode,
+        '-' => x11::keysym::XK_minus as XKeyCode,
+        '.' => x11::keysym::XK_period as XKeyCode,
+        '/' => x11::keysym::XK_slash as XKeyCode,
+        ':' => x11::keysym::XK_colon as XKeyCode,
+        ';' => x11::keysym::XK_semicolon as XKeyCode,
+        '<' => x11::keysym::XK_less as XKeyCode,
+        '=' => x11::keysym::XK_equal as XKeyCode,
+        '>' => x11::keysym::XK_greater as XKeyCode,
+        '?' => x11::keysym::XK_question as XKeyCode,
+        '@' => x11::keysym::XK_at as XKeyCode,
+        '[' => x11::keysym::XK_bracketleft as XKeyCode,
+        '\'' => x11::keysym::XK_quotedbl as XKeyCode,
+        '\\' => x11::keysym::XK_backslash as XKeyCode,
+        ']' => x11::keysym::XK_bracketright as XKeyCode,
+        '^' => x11::keysym::XK_asciicircum as XKeyCode,
+        '_' => x11::keysym::XK_underscore as XKeyCode,
+        '`' => x11::keysym::XK_grave as XKeyCode,
+        '{' => x11::keysym::XK_braceleft as XKeyCode,
+        '|' => x11::keysym::XK_bar as XKeyCode,
+        '}' => x11::keysym::XK_braceright as XKeyCode,
+        '~' => x11::keysym::XK_asciitilde as XKeyCode,
+        '\t' => x11::keysym::XK_Tab as XKeyCode,
+        '\n' => x11::keysym::XK_Return as XKeyCode,
+        _ => unsafe {
+            let mut buf = [0; 2];
+            x11::xlib::XStringToKeysym(character.encode_utf8(&mut buf).as_ptr() as *const i8)
+        },
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
+    &[]
+}
+
+#[cfg(target_os = "linux")]
+fn flags_for_char<'a>(character: char) -> &'a [Flag] {
+    const UPPERCASE_CHARACTERS: &[char] = &[
+        '!', '#', '$', '%', '&', '(', ')', '*', '+', ':', '<', '>', '?', '@', '{', '|', '}', '~'
+    ];
+    if character.is_uppercase() || UPPERCASE_CHARACTERS.contains(&character) {
+        &[Flag::Shift]
+    } else {
+        &[]
+    }
+}
+
 impl KeyCodeConvertible for Character {
     fn character(&self) -> Option<char> {
         Some(self.0)
@@ -167,12 +213,22 @@ impl KeyCodeConvertible for Character {
     fn code(&self) -> CGKeyCode {
         char_to_key_code(self.0)
     }
+
+    #[cfg(target_os = "linux")]
+    fn code(&self) -> XKeyCode {
+        char_to_key_code(self.0)
+    }
 }
 
 impl KeyCodeConvertible for Code {
     #[cfg(target_os = "macos")]
     fn code(&self) -> CGKeyCode {
         CGKeyCode::from(self.0)
+    }
+
+    #[cfg(target_os = "linux")]
+    fn code(&self) -> XKeyCode {
+        XKeyCode::from(self.0)
     }
 }
 
@@ -186,8 +242,6 @@ impl From<Flag> for CGEventFlags {
             Flag::Meta => event::CGEventFlags::CGEventFlagCommand,
             Flag::Help => event::CGEventFlags::CGEventFlagHelp,
             Flag::SecondaryFn => event::CGEventFlags::CGEventFlagSecondaryFn,
-            Flag::NumericPad => event::CGEventFlags::CGEventFlagNumericPad,
-            Flag::NonCoalesced => event::CGEventFlags::CGEventFlagNonCoalesced,
         }
     }
 }
@@ -230,9 +284,127 @@ impl From<KeyCode> for CGKeyCode {
 }
 
 #[cfg(target_os = "macos")]
-fn event_mask_for_flags(flags: &[Flag]) -> CGEventFlags {
-    let map = flags.iter().map(|&x| CGEventFlags::from(x));
-    map.fold(event::CGEventFlags::CGEventFlagNull, |x, y| {
-        x | y as CGEventFlags
+fn cg_event_mask_for_flags(flags: &[Flag]) -> CGEventFlags {
+    flags
+        .iter()
+        .map(|&x| CGEventFlags::from(x))
+        .fold(event::CGEventFlags::CGEventFlagNull, |x, y| {
+            x | y as CGEventFlags
+        })
+}
+
+#[cfg(target_os = "macos")]
+fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+    use core_graphics::event::CGEventType::*;
+    let source = CGEventSource::new(HIDSystemState).unwrap();
+
+    if flags.len() == 0 {
+        if let Some(character) = key.character() {
+            let mut buf = [0; 2];
+            let event = CGEvent::new_keyboard_event(source, 0, down).unwrap();
+            event.set_string_from_utf16_unchecked(character.encode_utf16(&mut buf));
+            event.post(CGEventTapLocation::HID);
+            return;
+        }
+    }
+
+    let event = CGEvent::new_keyboard_event(source, key.code(), down).unwrap();
+    let event_type: CGEventType = if down { KeyDown } else { KeyUp };
+    event.set_type(event_type);
+    event.set_flags(cg_event_mask_for_flags(flags));
+    event.post(CGEventTapLocation::HID);
+}
+
+#[cfg(target_os = "linux")]
+type XKeyCode = u64;
+
+#[cfg(target_os = "linux")]
+impl From<Flag> for XKeyCode {
+    fn from(flag: Flag) -> XKeyCode {
+        let x_code = match flag {
+            Flag::Shift => x11::keysym::XK_Shift_L,
+            Flag::Control => x11::keysym::XK_Control_L,
+            Flag::Alt => x11::keysym::XK_Alt_L,
+            Flag::Meta => x11::keysym::XK_Meta_L,
+            Flag::Help => x11::keysym::XK_Help,
+            Flag::SecondaryFn => x11::keysym::XK_function,
+        };
+        x_code as XKeyCode
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl From<KeyCode> for XKeyCode {
+    fn from(code: KeyCode) -> XKeyCode {
+        let x_code = match code {
+            KeyCode::F1 => x11::keysym::XK_F1,
+            KeyCode::F2 => x11::keysym::XK_F2,
+            KeyCode::F3 => x11::keysym::XK_F3,
+            KeyCode::F4 => x11::keysym::XK_F4,
+            KeyCode::F5 => x11::keysym::XK_F5,
+            KeyCode::F6 => x11::keysym::XK_F6,
+            KeyCode::F7 => x11::keysym::XK_F7,
+            KeyCode::F8 => x11::keysym::XK_F8,
+            KeyCode::F9 => x11::keysym::XK_F9,
+            KeyCode::F10 => x11::keysym::XK_F10,
+            KeyCode::F11 => x11::keysym::XK_F11,
+            KeyCode::F12 => x11::keysym::XK_F12,
+            KeyCode::LeftArrow => x11::keysym::XK_leftarrow,
+            KeyCode::Control => x11::keysym::XK_Control_L,
+            KeyCode::RightArrow => x11::keysym::XK_rightarrow,
+            KeyCode::DownArrow => x11::keysym::XK_downarrow,
+            KeyCode::End => x11::keysym::XK_End,
+            KeyCode::UpArrow => x11::keysym::XK_uparrow,
+            KeyCode::PageUp => x11::keysym::XK_Page_Up,
+            KeyCode::Alt => x11::keysym::XK_Alt_L,
+            KeyCode::Return => x11::keysym::XK_Return,
+            KeyCode::PageDown => x11::keysym::XK_Page_Down,
+            KeyCode::Delete => x11::keysym::XK_Delete,
+            KeyCode::Home => x11::keysym::XK_Home,
+            KeyCode::Escape => x11::keysym::XK_Escape,
+            KeyCode::Backspace => x11::keysym::XK_Delete,
+            KeyCode::Meta => x11::keysym::XK_Meta_L,
+            KeyCode::CapsLock => x11::keysym::XK_Caps_Lock,
+            KeyCode::Shift => x11::keysym::XK_Shift_L,
+        };
+        x_code as XKeyCode
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn x_send_key_event(display: *mut x11::xlib::Display, keycode: XKeyCode, down: bool, wait: bool) {
+    unsafe {
+        XTestFakeKeyEvent(
+            display,
+            x11::xlib::XKeysymToKeycode(display, keycode),
+            down as i32,
+            x11::xlib::CurrentTime,
+        );
+        x11::xlib::XFlush(display);
+    };
+
+    if wait {
+        let ms: u64 = rand::thread_rng().gen_range(5, 20);
+        std::thread::sleep(std::time::Duration::from_millis(ms));
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+    internal::X_MAIN_DISPLAY.with(|display| {
+        for &flag in flags.iter() {
+            x_send_key_event(*display, XKeyCode::from(flag), down, true);
+        }
+        x_send_key_event(*display, key.code(), down, false);
     })
+}
+
+#[cfg(target_os = "linux")]
+extern "C" {
+    fn XTestFakeKeyEvent(
+        display: *mut x11::xlib::Display,
+        keycode: u8,
+        is_press: i32,
+        delay: x11::xlib::Time,
+    ) -> i32;
 }

@@ -6,18 +6,13 @@ extern crate image;
 
 use geometry::{Point, Rect, Size};
 use screen;
-use image::{DynamicImage, GenericImage, ImageError, ImageFormat, ImageResult, Pixel, Rgba,
-            RgbaImage};
-use libc::size_t;
-use libc;
-use std::fmt;
+use image::{DynamicImage, GenericImage, ImageError, ImageResult, Pixel, Rgba};
+use std;
 
 #[cfg(target_os = "macos")]
-use cocoa::appkit::{NSImage, NSPasteboard};
+use image::RgbaImage;
 #[cfg(target_os = "macos")]
-use cocoa::base::nil;
-#[cfg(target_os = "macos")]
-use cocoa::foundation::{NSArray, NSData};
+use libc;
 #[cfg(target_os = "macos")]
 use core_graphics::base::CGFloat;
 #[cfg(target_os = "macos")]
@@ -29,6 +24,13 @@ use core_graphics::geometry::{CGRect, CGSize, CG_ZERO_POINT};
 #[cfg(target_os = "macos")]
 use core_graphics::image::{CGImage, CGImageAlphaInfo, CGImageByteOrderInfo};
 
+#[cfg(target_os = "linux")]
+use internal;
+#[cfg(target_os = "linux")]
+use x11;
+#[cfg(not(target_os = "macos"))]
+use scopeguard::guard;
+
 #[derive(Clone)]
 pub struct Bitmap {
     pub image: DynamicImage,
@@ -36,8 +38,8 @@ pub struct Bitmap {
     pub scale: f64,
 }
 
-impl fmt::Debug for Bitmap {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Debug for Bitmap {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Bitmap {{ size: {}, scale: {} }}", self.size, self.scale)
     }
 }
@@ -64,11 +66,7 @@ impl Bitmap {
     /// Copies image to pasteboard. Currently only supported on Windows and
     /// macOS.
     pub fn copy_to_pasteboard(&self) -> ImageResult<()> {
-        if cfg!(target_os = "macos") {
-            self.macos_copy_to_pasteboard()
-        } else {
-            panic!("Unsupported OS");
-        }
+        self.system_copy_to_pasteboard()
     }
 
     /// Returns new Bitmap created from a portion of another.
@@ -347,25 +345,32 @@ impl Bitmap {
     }
 
     #[cfg(target_os = "macos")]
-    fn macos_copy_to_pasteboard(&self) -> ImageResult<()> {
+    fn system_copy_to_pasteboard(&self) -> ImageResult<()> {
+        use cocoa::appkit::{NSImage, NSPasteboard};
+        use cocoa::base::nil;
+        use cocoa::foundation::{NSArray, NSData};
+        use image::ImageFormat;
+
         let mut buffer: Vec<u8> = Vec::new();
-        let result = self.image.save(&mut buffer, ImageFormat::PNG);
-        match result {
-            Ok(_) => unsafe {
-                let data = NSData::dataWithBytesNoCopy_length_(
-                    nil,
-                    buffer.as_ptr() as *const libc::c_void,
-                    buffer.len() as u64,
-                );
-                let image = NSImage::initWithData_(NSImage::alloc(nil), data);
-                let objects = NSArray::arrayWithObject(nil, image);
-                let pasteboard = NSPasteboard::generalPasteboard(nil);
-                pasteboard.clearContents();
-                pasteboard.writeObjects(objects);
-                result
-            },
-            _ => result,
+        try!(self.image.save(&mut buffer, ImageFormat::PNG));
+        unsafe {
+            let data = NSData::dataWithBytesNoCopy_length_(
+                nil,
+                buffer.as_ptr() as *const libc::c_void,
+                buffer.len() as u64,
+            );
+            let image = NSImage::initWithData_(NSImage::alloc(nil), data);
+            let objects = NSArray::arrayWithObject(nil, image);
+            let pasteboard = NSPasteboard::generalPasteboard(nil);
+            pasteboard.clearContents();
+            pasteboard.writeObjects(objects);
         }
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    fn system_copy_to_pasteboard(&self) -> ImageResult<()> {
+        panic!("Unsupported OS");
     }
 }
 
@@ -402,23 +407,72 @@ pub fn capture_screen() -> ImageResult<Bitmap> {
 pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     if !screen::is_rect_visible(rect) {
         Err(ImageError::DimensionError)
-    } else if cfg!(target_os = "macos") {
-        if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
-            macos_load_cgimage(image)
-        } else {
-            Err(ImageError::NotEnoughData)
-        }
     } else {
-        panic!("Unsupported OS");
+        system_capture_screen_portion(rect)
     }
 }
 
 #[cfg(target_os = "macos")]
+fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
+    if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
+        macos_load_cgimage(image)
+    } else {
+        Err(ImageError::NotEnoughData)
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
+    internal::X_MAIN_DISPLAY.with(|display| {
+        let root_window = unsafe {
+            guard(x11::xlib::XDefaultRootWindow(*display), |w| {
+                x11::xlib::XDestroyWindow(*display, *w);
+            })
+        };
+        let image_ptr = unsafe {
+            guard(
+                x11::xlib::XGetImage(
+                    *display,
+                    *root_window,
+                    rect.origin.x as i32,
+                    rect.origin.y as i32,
+                    rect.size.width as u32,
+                    rect.size.height as u32,
+                    x11::xlib::XAllPlanes(),
+                    x11::xlib::ZPixmap,
+                ),
+                |i| {
+                    x11::xlib::XDestroyImage(*i);
+                },
+            )
+        };
+        if *image_ptr == std::ptr::null_mut() {
+            return Err(ImageError::NotEnoughData);
+        }
+        let image = unsafe { **image_ptr };
+        let bytes_per_pixel = image.bits_per_pixel / 8;
+        let buflen: usize = image.width as usize * image.height as usize * bytes_per_pixel as usize;
+        let buffer: &[u8] = unsafe { std::slice::from_raw_parts(image.data as *mut u8, buflen) };
+        let mut img = DynamicImage::new_rgb8(image.width as u32, image.height as u32);
+        for x in 0..image.width {
+            for y in 0..image.height {
+                let offset: usize = image.bytes_per_line as usize * y as usize
+                    + bytes_per_pixel as usize * x as usize;
+                let (b, g, r) = (buffer[offset], buffer[offset + 1], buffer[offset + 2]);
+                img.put_pixel(x as u32, y as u32, Rgba([r, g, b, 255]));
+            }
+        }
+        let bmp = Bitmap::new(img, Some(screen::scale()));
+        Ok(bmp)
+    })
+}
+
+#[cfg(target_os = "macos")]
 fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
-    let width: size_t = image.width();
-    let height: size_t = image.height();
-    let bits_per_component: size_t = image.bits_per_component();
-    let bytes_per_row: size_t = image.bytes_per_row();
+    let width: libc::size_t = image.width();
+    let height: libc::size_t = image.height();
+    let bits_per_component: libc::size_t = image.bits_per_component();
+    let bytes_per_row: libc::size_t = image.bytes_per_row();
     let space = image.color_space();
     let flags: u32 = CGImageByteOrderInfo::CGImageByteOrder32Big as u32
         | CGImageAlphaInfo::CGImageAlphaNoneSkipLast as u32;
