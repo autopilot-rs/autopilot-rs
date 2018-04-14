@@ -1,0 +1,7 @@
+[package]
+name = "autopilot-sine-mouse-wave"
+version = "0.1.0"
+
+[dependencies]
+autopilot = { path = "../.." }
+rand = "*"

@@ -1,0 +1,7 @@
+[package]
+name = "autopilot-screengrab"
+version = "0.1.0"
+
+[dependencies]
+autopilot = { path = "../.." }
+image = "*"

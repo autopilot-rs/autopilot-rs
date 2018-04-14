@@ -1,0 +1,6 @@
+[package]
+name = "autopilot-hello-world-alert"
+version = "0.1.0"
+
+[dependencies]
+autopilot = { path = "../.." }
