@@ -21,7 +21,12 @@ extern crate cocoa;
 extern crate core_foundation;
 #[cfg(target_os = "macos")]
 extern crate core_graphics;
+#[cfg(windows)]
+extern crate winapi;
 #[cfg(target_os = "linux")]
 extern crate scopeguard;
 #[cfg(target_os = "linux")]
 extern crate x11;
+#[cfg(windows)]
+#[macro_use(defer)]
+extern crate scopeguard;

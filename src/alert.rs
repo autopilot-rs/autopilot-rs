@@ -96,6 +96,40 @@ fn system_alert(
     }
 }
 
+#[cfg(windows)]
+fn system_alert(
+    title: &str,
+    msg: &str,
+    _default_button: &str,
+    cancel_button: Option<&str>,
+) -> Option<Response> {
+    use std::ffi::OsStr;
+    use std::iter::once;
+    use std::os::windows::ffi::OsStrExt;
+    use winapi::um::winuser::{MessageBoxW, IDOK, MB_OK, MB_OKCANCEL};
+    let title_wide: Vec<u16> = OsStr::new(title).encode_wide().chain(once(0)).collect();
+    let msg_wide: Vec<u16> = OsStr::new(msg).encode_wide().chain(once(0)).collect();
+    let prompt_type = if cancel_button.is_none() {
+        MB_OK
+    } else {
+        MB_OKCANCEL
+    };
+    let ret = unsafe {
+        MessageBoxW(
+            std::ptr::null_mut(),
+            msg_wide.as_ptr(),
+            title_wide.as_ptr(),
+            prompt_type,
+        )
+    };
+
+    if ret == IDOK {
+        Some(Response::Default)
+    } else {
+        Some(Response::Cancel)
+    }
+}
+
 #[cfg(target_os = "linux")]
 fn system_alert(
     title: &str,

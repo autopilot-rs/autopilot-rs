@@ -4,8 +4,7 @@ extern crate rand;
 #[cfg(target_os = "macos")]
 use core_graphics::event;
 #[cfg(target_os = "macos")]
-use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGEventType, CGKeyCode,
-                           EventField};
+use core_graphics::event::{CGEvent, CGEventFlags, CGKeyCode};
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::CGEventSource;
 #[cfg(target_os = "macos")]
@@ -70,6 +69,8 @@ pub trait KeyCodeConvertible {
     fn code(&self) -> CGKeyCode;
     #[cfg(target_os = "linux")]
     fn code(&self) -> XKeyCode;
+    #[cfg(windows)]
+    fn code(&self) -> WinKeyCode;
     fn character(&self) -> Option<char> {
         None
     }
@@ -136,6 +137,7 @@ pub fn toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
 
 #[cfg(target_os = "macos")]
 fn char_to_key_code(character: char) -> CGKeyCode {
+    use core_graphics::event::EventField;
     let source = CGEventSource::new(HIDSystemState).unwrap();
     let event = CGEvent::new_keyboard_event(source, 0, true).unwrap();
     let mut buf = [0; 2];
@@ -192,6 +194,11 @@ fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
     &[]
 }
 
+#[cfg(windows)]
+fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
+    &[]
+}
+
 #[cfg(target_os = "linux")]
 fn flags_for_char<'a>(character: char) -> &'a [Flag] {
     const UPPERCASE_CHARACTERS: &[char] = &[
@@ -214,6 +221,11 @@ impl KeyCodeConvertible for Character {
         char_to_key_code(self.0)
     }
 
+    #[cfg(windows)]
+    fn code(&self) -> WinKeyCode {
+        panic!("Unsupported OS")
+    }
+
     #[cfg(target_os = "linux")]
     fn code(&self) -> XKeyCode {
         char_to_key_code(self.0)
@@ -224,6 +236,11 @@ impl KeyCodeConvertible for Code {
     #[cfg(target_os = "macos")]
     fn code(&self) -> CGKeyCode {
         CGKeyCode::from(self.0)
+    }
+
+    #[cfg(windows)]
+    fn code(&self) -> WinKeyCode {
+        WinKeyCode::from(self.0)
     }
 
     #[cfg(target_os = "linux")]
@@ -296,6 +313,7 @@ fn cg_event_mask_for_flags(flags: &[Flag]) -> CGEventFlags {
 #[cfg(target_os = "macos")]
 fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
     use core_graphics::event::CGEventType::*;
+    use core_graphics::event::{CGEventTapLocation, CGEventType};
     let source = CGEventSource::new(HIDSystemState).unwrap();
 
     if flags.len() == 0 {
@@ -313,6 +331,108 @@ fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
     event.set_type(event_type);
     event.set_flags(cg_event_mask_for_flags(flags));
     event.post(CGEventTapLocation::HID);
+}
+
+#[cfg(windows)]
+type WinKeyCode = i32;
+
+#[cfg(windows)]
+impl From<Flag> for WinKeyCode {
+    fn from(flag: Flag) -> WinKeyCode {
+        use winapi::um::winuser;
+        let win_code = match flag {
+            Flag::Shift => winuser::VK_SHIFT,
+            Flag::Control => winuser::VK_CONTROL,
+            Flag::Alt => winuser::VK_MENU,
+            Flag::Meta => winuser::VK_LWIN,
+            Flag::Help => winuser::VK_HELP,
+            Flag::SecondaryFn => winuser::VK_HELP, // TODO
+        };
+        win_code as WinKeyCode
+    }
+}
+
+#[cfg(windows)]
+impl From<KeyCode> for WinKeyCode {
+    fn from(code: KeyCode) -> WinKeyCode {
+        use winapi::um::winuser;
+        let win_code = match code {
+            KeyCode::F1 => winuser::VK_F1,
+            KeyCode::F2 => winuser::VK_F2,
+            KeyCode::F3 => winuser::VK_F3,
+            KeyCode::F4 => winuser::VK_F4,
+            KeyCode::F5 => winuser::VK_F5,
+            KeyCode::F6 => winuser::VK_F6,
+            KeyCode::F7 => winuser::VK_F7,
+            KeyCode::F8 => winuser::VK_F8,
+            KeyCode::F9 => winuser::VK_F9,
+            KeyCode::F10 => winuser::VK_F10,
+            KeyCode::F11 => winuser::VK_F11,
+            KeyCode::F12 => winuser::VK_F12,
+            KeyCode::LeftArrow => winuser::VK_LEFT,
+            KeyCode::Control => winuser::VK_CONTROL,
+            KeyCode::RightArrow => winuser::VK_RIGHT,
+            KeyCode::DownArrow => winuser::VK_DOWN,
+            KeyCode::End => winuser::VK_END,
+            KeyCode::UpArrow => winuser::VK_UP,
+            KeyCode::PageUp => winuser::VK_PRIOR,
+            KeyCode::Alt => winuser::VK_MENU,
+            KeyCode::Return => winuser::VK_RETURN,
+            KeyCode::PageDown => winuser::VK_NEXT,
+            KeyCode::Delete => winuser::VK_DELETE,
+            KeyCode::Home => winuser::VK_HOME,
+            KeyCode::Escape => winuser::VK_ESCAPE,
+            KeyCode::Backspace => winuser::VK_BACK,
+            KeyCode::Meta => winuser::VK_LWIN,
+            KeyCode::CapsLock => winuser::VK_CAPITAL,
+            KeyCode::Shift => winuser::VK_SHIFT,
+        };
+        win_code as WinKeyCode
+    }
+}
+
+#[cfg(windows)]
+fn win_send_key_event(keycode: WinKeyCode, down: bool, wait: bool) {
+    use winapi::um::winuser::{keybd_event, KEYEVENTF_KEYUP};
+    let flags = if down { 0 } else { KEYEVENTF_KEYUP };
+    unsafe { keybd_event(keycode as u8, 0, flags, 0) };
+
+    if wait {
+        let ms: u64 = rand::thread_rng().gen_range(5, 20);
+        std::thread::sleep(std::time::Duration::from_millis(ms));
+    }
+}
+
+#[cfg(windows)]
+fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+    use winapi::um::winuser::{SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
+                              KEYEVENTF_UNICODE};
+    for &flag in flags.iter() {
+        win_send_key_event(WinKeyCode::from(flag), down, true);
+    }
+    if let Some(character) = key.character() {
+        let flags = if down { 0 } else { KEYEVENTF_KEYUP };
+        let mut buf = [0; 2];
+        for word in character.encode_utf16(&mut buf) {
+            let mut input = INPUT {
+                type_: INPUT_KEYBOARD,
+                u: unsafe {
+                    std::mem::transmute_copy(&KEYBDINPUT {
+                        wVk: 0,
+                        wScan: *word,
+                        dwFlags: KEYEVENTF_UNICODE | flags,
+                        time: 0,
+                        dwExtraInfo: 0,
+                    })
+                },
+            };
+            unsafe {
+                SendInput(1, &mut input, std::mem::size_of::<INPUT>() as i32);
+            }
+        }
+    } else {
+        win_send_key_event(key.code(), down, false);
+    }
 }
 
 #[cfg(target_os = "linux")]

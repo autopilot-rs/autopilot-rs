@@ -52,6 +52,19 @@ fn system_scale() -> f64 {
     mode.pixel_height() as f64 / mode.height() as f64
 }
 
+#[cfg(windows)]
+fn system_size() -> Size {
+    use winapi::um::winuser::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
+    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) } as f64;
+    let height = unsafe { GetSystemMetrics(SM_CYSCREEN) } as f64;
+    Size::new(width, height)
+}
+
+#[cfg(windows)]
+fn system_scale() -> f64 {
+    1.0
+}
+
 #[cfg(target_os = "linux")]
 fn system_size() -> Size {
     internal::X_MAIN_DISPLAY.with(|display| unsafe {

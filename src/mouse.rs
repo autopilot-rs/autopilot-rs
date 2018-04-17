@@ -18,6 +18,8 @@ use core_graphics::event_source::CGEventSource;
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::CGPoint;
+#[cfg(windows)]
+use winapi::shared::minwindef::DWORD;
 
 #[cfg(target_os = "linux")]
 use x11;
@@ -158,6 +160,50 @@ fn system_toggle(button: Button, down: bool) {
     let event_type = button.event_type(down);
     let event = CGEvent::new_mouse_event(source, event_type, point, CGMouseButton::from(button));
     event.unwrap().post(CGEventTapLocation::HID);
+}
+
+#[cfg(windows)]
+fn mouse_event_for_button(button: Button, down: bool) -> DWORD {
+    use winapi::um::winuser::{MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN,
+                              MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP};
+    match (button, down) {
+        (Button::Left, true) => MOUSEEVENTF_LEFTDOWN,
+        (Button::Left, false) => MOUSEEVENTF_LEFTUP,
+        (Button::Right, true) => MOUSEEVENTF_RIGHTDOWN,
+        (Button::Right, false) => MOUSEEVENTF_RIGHTUP,
+        (Button::Middle, true) => MOUSEEVENTF_MIDDLEDOWN,
+        (Button::Middle, false) => MOUSEEVENTF_MIDDLEUP,
+    }
+}
+
+#[cfg(windows)]
+fn system_move_to(point: Point) {
+    use winapi::um::winuser::{mouse_event, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_MOVE};
+    let screen_size = screen::size();
+    let x = point.x as DWORD * (0xFFFF / screen_size.width as DWORD);
+    let y = point.y as DWORD * (0xFFFF / screen_size.height as DWORD);
+    unsafe {
+        mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, x, y, 0, 0);
+    };
+}
+
+#[cfg(windows)]
+fn system_location() -> Point {
+    use winapi::um::winuser::GetCursorPos;
+    use winapi::shared::windef::POINT;
+    let mut point: POINT = POINT { x: 0, y: 0 };
+    unsafe {
+        GetCursorPos(&mut point);
+    }
+    Point::from(point)
+}
+
+#[cfg(windows)]
+fn system_toggle(button: Button, down: bool) {
+    use winapi::um::winuser::mouse_event;
+    unsafe {
+        mouse_event(mouse_event_for_button(button, down), 0, 0, 0, 0);
+    };
 }
 
 #[cfg(target_os = "linux")]

@@ -10,19 +10,11 @@ use image::{DynamicImage, GenericImage, ImageError, ImageResult, Pixel, Rgba};
 use std;
 
 #[cfg(target_os = "macos")]
-use image::RgbaImage;
+use core_graphics::geometry::CGRect;
+#[cfg(target_os = "macos")]
+use core_graphics::image::CGImage;
 #[cfg(target_os = "macos")]
 use libc;
-#[cfg(target_os = "macos")]
-use core_graphics::base::CGFloat;
-#[cfg(target_os = "macos")]
-use core_graphics::context::CGContext;
-#[cfg(target_os = "macos")]
-use core_graphics::display::CGDisplay;
-#[cfg(target_os = "macos")]
-use core_graphics::geometry::{CGRect, CGSize, CG_ZERO_POINT};
-#[cfg(target_os = "macos")]
-use core_graphics::image::{CGImage, CGImageAlphaInfo, CGImageByteOrderInfo};
 
 #[cfg(target_os = "linux")]
 use internal;
@@ -354,7 +346,7 @@ impl Bitmap {
         let mut buffer: Vec<u8> = Vec::new();
         try!(self.image.save(&mut buffer, ImageFormat::PNG));
         unsafe {
-            let data = NSData::dataWithBytesNoCopy_length_(
+            let data = NSData::dataWithBytes_length_(
                 nil,
                 buffer.as_ptr() as *const libc::c_void,
                 buffer.len() as u64,
@@ -365,6 +357,53 @@ impl Bitmap {
             pasteboard.clearContents();
             pasteboard.writeObjects(objects);
         }
+        Ok(())
+    }
+
+    #[cfg(windows)]
+    fn system_copy_to_pasteboard(&self) -> ImageResult<()> {
+        use image::ImageFormat;
+        use winapi::um::winuser::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
+                                  CF_DIB};
+        use winapi::um::winbase::{GlobalAlloc, GlobalFree, GlobalLock, GlobalUnlock};
+        use winapi::um::wingdi::BITMAPFILEHEADER;
+        let mut buffer: Vec<u8> = Vec::new();
+        try!(self.image.save(&mut buffer, ImageFormat::BMP));
+        unsafe {
+            if OpenClipboard(std::ptr::null_mut()) == 0 {
+                return Err(ImageError::NotEnoughData);
+            }
+        }
+        defer!(unsafe {
+            CloseClipboard();
+        });
+        unsafe {
+            if EmptyClipboard() == 0 {
+                return Err(ImageError::NotEnoughData);
+            }
+        }
+
+        let header_size = std::mem::size_of::<BITMAPFILEHEADER>();
+        let buflen = buffer.len() - header_size;
+        let handle = guard(unsafe { GlobalAlloc(GMEM_MOVEABLE, buflen) }, |h| unsafe {
+            GlobalFree(*h);
+        });
+        if *handle == std::ptr::null_mut() {
+            return Err(ImageError::NotEnoughData);
+        }
+
+        unsafe {
+            std::ptr::copy_nonoverlapping(
+                (buffer.as_mut_ptr() as *mut u8).offset(header_size as isize),
+                GlobalLock(*handle) as *mut u8,
+                buflen,
+            );
+            GlobalUnlock(*handle);
+
+            if SetClipboardData(CF_DIB, *handle) == std::ptr::null_mut() {
+                return Err(ImageError::NotEnoughData);
+            }
+        };
         Ok(())
     }
 
@@ -414,6 +453,7 @@ pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 
 #[cfg(target_os = "macos")]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
+    use core_graphics::display::CGDisplay;
     if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
         macos_load_cgimage(image)
     } else {
@@ -421,8 +461,111 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     }
 }
 
+#[cfg(windows)]
+const GMEM_MOVEABLE: u32 = 0x0002;
+
+#[cfg(windows)]
+fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
+    use winapi::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER, BI_RGB};
+    use winapi::um::wingdi::{DeleteDC, DeleteObject};
+    use winapi::um::winuser::{GetDC, ReleaseDC};
+    use winapi::ctypes::c_void;
+    use winapi::shared::minwindef::DWORD;
+    use winapi::shared::windef::HGDIOBJ;
+    use winapi::um::wingdi::{BitBlt, CreateCompatibleDC, CreateDIBSection, SelectObject,
+                             DIB_RGB_COLORS, SRCCOPY};
+
+    let rect = rect.scaled(screen::scale());
+    let bytes_per_pixel: usize = 4;
+    let bytewidth = rect.size.width as usize * bytes_per_pixel;
+    let bitmap_info = BITMAPINFO {
+        bmiHeader: BITMAPINFOHEADER {
+            biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+            biWidth: rect.size.width as i32,
+            biHeight: -rect.size.height as i32, // Indicates non-cartesian coordinates.
+            biPlanes: 1,
+            biBitCount: (bytes_per_pixel * 8) as u16,
+            biCompression: BI_RGB,
+            biSizeImage: (rect.size.width * rect.size.height) as DWORD * bytes_per_pixel as DWORD,
+            biXPelsPerMeter: 0,
+            biYPelsPerMeter: 0,
+            biClrUsed: 0,
+            biClrImportant: 0,
+        },
+        bmiColors: [],
+    };
+
+    // Copy entire screen.
+    let screen = unsafe {
+        guard(GetDC(std::ptr::null_mut()), |s| {
+            ReleaseDC(std::ptr::null_mut(), *s);
+        })
+    };
+    if *screen == std::ptr::null_mut() {
+        return Err(ImageError::NotEnoughData);
+    }
+
+    // Get screen data in display device context.
+    let mut data: *mut c_void = std::ptr::null_mut();
+    let dib = unsafe {
+        guard(
+            CreateDIBSection(
+                *screen,
+                &bitmap_info,
+                DIB_RGB_COLORS,
+                &mut data,
+                std::ptr::null_mut(),
+                0,
+            ),
+            |d| {
+                DeleteObject(*d as HGDIOBJ);
+            },
+        )
+    };
+
+    // Copy data into bitmap struct.
+    let screen_mem = unsafe {
+        guard(CreateCompatibleDC(*screen), |s| {
+            DeleteDC(*s);
+        })
+    };
+    unsafe {
+        if *screen_mem == std::ptr::null_mut()
+            || SelectObject(*screen_mem, *dib as HGDIOBJ) == std::ptr::null_mut()
+            || BitBlt(
+                *screen_mem,
+                rect.origin.x as i32,
+                rect.origin.y as i32,
+                rect.size.width as i32,
+                rect.size.height as i32,
+                *screen,
+                0,
+                0,
+                SRCCOPY,
+            ) == 0
+        {
+            return Err(ImageError::NotEnoughData);
+        }
+    };
+
+    let buflen: usize = rect.size.height as usize * bytewidth;
+    let buffer: &[u8] = unsafe { std::slice::from_raw_parts(data as *mut u8, buflen) };
+    let mut img = DynamicImage::new_rgb8(rect.size.width as u32, rect.size.height as u32);
+    for x in 0..rect.size.width as usize {
+        for y in 0..rect.size.height as usize {
+            let offset: usize =
+                bytewidth as usize * y as usize + bytes_per_pixel as usize * x as usize;
+            let (b, g, r) = (buffer[offset], buffer[offset + 1], buffer[offset + 2]);
+            img.put_pixel(x as u32, y as u32, Rgba([r, g, b, 255]));
+        }
+    }
+
+    Ok(Bitmap::new(img, Some(screen::scale())))
+}
+
 #[cfg(target_os = "linux")]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
+    use image::RgbImage;
     internal::X_MAIN_DISPLAY.with(|display| {
         let root_window = unsafe {
             guard(x11::xlib::XDefaultRootWindow(*display), |w| {
@@ -469,6 +612,12 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 
 #[cfg(target_os = "macos")]
 fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
+    use core_graphics::base::CGFloat;
+    use core_graphics::context::CGContext;
+    use core_graphics::geometry::{CGSize, CG_ZERO_POINT};
+    use core_graphics::image::{CGImageAlphaInfo, CGImageByteOrderInfo};
+    use image::RgbaImage;
+
     let width: libc::size_t = image.width();
     let height: libc::size_t = image.height();
     let bits_per_component: libc::size_t = image.bits_per_component();
