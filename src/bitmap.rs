@@ -26,7 +26,10 @@ use scopeguard::guard;
 #[derive(Clone)]
 pub struct Bitmap {
     pub image: DynamicImage,
+
+    /// Size of the bitmap in points.
     pub size: Size,
+
     pub scale: f64,
 }
 
@@ -43,7 +46,7 @@ impl Bitmap {
     pub fn new(image: DynamicImage, scale: Option<f64>) -> Bitmap {
         let scale: f64 = scale.unwrap_or(1.0);
         Bitmap {
-            size: Size::new(image.width() as f64, image.height() as f64),
+            size: Size::new(image.width() as f64 / scale, image.height() as f64 / scale),
             image: image,
             scale: scale,
         }
@@ -248,8 +251,8 @@ impl Bitmap {
 
     #[inline]
     fn is_needle_oversized(&self, needle: &Bitmap) -> bool {
-        needle.bounds().size.width > self.bounds().size.width
-            && needle.bounds().size.height > self.bounds().size.height
+        needle.scale > self.scale || needle.bounds().size.width > self.bounds().size.width
+            || needle.bounds().size.height > self.bounds().size.height
     }
 
     fn is_needle_at(&self, pt: Point, needle: &Bitmap, tolerance: Option<f64>) -> bool {
@@ -305,7 +308,7 @@ impl Bitmap {
             for y in start_y as u64..rect.max_y() as u64 {
                 let point = Point::new(x as f64, y as f64);
                 if predicate(point) {
-                    return Some(point);
+                    return Some(point.scaled(self.scale).round());
                 }
             }
             start_y = rect.origin.y;
@@ -670,12 +673,11 @@ mod tests {
     impl Arbitrary for Bitmap {
         fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
             let xs = Vec::<u8>::arbitrary(g);
-            // let scale = g.choose(&[1.0, 2.0]).unwrap();
-            let scale = 1.0;
-            let width = (xs.len() as f64 / 4.0).floor().sqrt();
+            let scale: f64 = g.choose(&[1.0, 2.0]).unwrap().clone();
+            let width: f64 = (xs.len() as f64 / 4.0).floor().sqrt();
             let image = RgbaImage::from_raw(width as u32, width as u32, xs).unwrap();
             let dynimage = DynamicImage::ImageRgba8(image);
-            return Bitmap::new(dynimage, Some(scale.clone()));
+            return Bitmap::new(dynimage, Some(scale));
         }
     }
 
@@ -693,7 +695,7 @@ mod tests {
 
     quickcheck! {
         fn finds_cropped_bitmap(haystack: Bitmap) -> TestResult {
-            if haystack.size.width == 0.0 {
+            if haystack.size.width < 2.0 {
                 return TestResult::discard();
             }
 
@@ -702,11 +704,11 @@ mod tests {
             let offset_percentage: f64 = rng.gen_range(0.0, 1.0);
             let mut cropped_width = (haystack.size.width * crop_scale).round();
             let mut cropped_height = (haystack.size.height * crop_scale).round();
-            if cropped_width < 1.0 {
-                cropped_width = 1.0;
+            if cropped_width < 1.0 * haystack.scale {
+                cropped_width = 1.0 * haystack.scale;
             }
-            if cropped_height < 1.0 {
-                cropped_height = 1.0;
+            if cropped_height < 1.0 * haystack.scale {
+                cropped_height = 1.0 * haystack.scale;
             }
             let offset_pt = Point::new(
                 (haystack.size.width - cropped_width) * offset_percentage,
@@ -740,17 +742,17 @@ mod tests {
 
     quickcheck! {
         fn count_of_tiled_bitmap(tile: Bitmap) -> TestResult {
-            if tile.size.width == 0.0 {
+            if tile.size.width <= 2.0 {
                 return TestResult::discard();
             }
             let mut haystack_img = DynamicImage::new_rgba8(
-                tile.size.width as u32 * 2 + 1,
-                tile.size.height as u32 * 2 + 1
+                tile.image.width() as u32 * 2 as u32 + 1,
+                tile.image.height() as u32 * 2 as u32 + 1
             );
-            for x in 0..tile.size.width as u32 * 2 {
-                for y in 0..tile.size.height as u32 * 2 {
-                    let tile_x = x % tile.size.width as u32;
-                    let tile_y = y % tile.size.height as u32;
+            for x in 0..tile.image.width() as u32 * 2 as u32 {
+                for y in 0..tile.image.height() as u32 * 2 as u32 {
+                    let tile_x = x % tile.image.width() as u32;
+                    let tile_y = y % tile.image.height() as u32;
                     haystack_img.put_pixel(
                         x as u32,
                         y as u32,

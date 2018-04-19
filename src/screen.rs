@@ -11,12 +11,12 @@ use internal;
 #[cfg(target_os = "linux")]
 use x11;
 
-/// Returns the size of the main screen.
+/// Returns the size of the main screen in points.
 pub fn size() -> Size {
     system_size()
 }
 
-/// Returns the scale of the main screen.
+/// Returns the scale of the main screen, i.e. how many pixels are in a point.
 pub fn scale() -> f64 {
     system_scale()
 }
