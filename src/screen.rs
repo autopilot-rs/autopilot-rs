@@ -55,14 +55,19 @@ fn system_scale() -> f64 {
 #[cfg(windows)]
 fn system_size() -> Size {
     use winapi::um::winuser::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
+    let scale_factor = scale();
     let width = unsafe { GetSystemMetrics(SM_CXSCREEN) } as f64;
     let height = unsafe { GetSystemMetrics(SM_CYSCREEN) } as f64;
-    Size::new(width, height)
+    Size::new(width, height).scaled(1.0 / scale_factor)
 }
 
 #[cfg(windows)]
 fn system_scale() -> f64 {
-    1.0
+    use winapi::um::winuser::GetDesktopWindow;
+    unsafe { SetProcessDPIAware() };
+    let window = unsafe { GetDesktopWindow() };
+    let dpi = unsafe { GetDpiForWindow(window) };
+    dpi as f64 / 96.0
 }
 
 #[cfg(target_os = "linux")]
@@ -78,4 +83,16 @@ fn system_size() -> Size {
 #[cfg(target_os = "linux")]
 fn system_scale() -> f64 {
     1.0
+}
+
+#[cfg(windows)]
+use winapi::shared::windef::HWND;
+#[cfg(windows)]
+use libc;
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn SetProcessDPIAware();
+    fn GetDpiForWindow(hWnd: HWND) -> libc::c_uint;
 }
