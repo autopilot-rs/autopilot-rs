@@ -646,18 +646,8 @@ fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
 
     let buffer: &[u8] = context.data();
     let image = RgbaImage::from_raw(width as u32, height as u32, buffer.to_vec()).unwrap();
-    // let dynimage = DynamicImage::ImageRgb8(DynamicImage::ImageRgba8(image).to_rgb());
     let dynimage = DynamicImage::ImageRgba8(image);
     let bmp = Bitmap::new(dynimage, Some(screen::scale()));
-    // let mut result = DynamicImage::new_rgb8(width as u32, height as u32);
-    // for x in 0..width {
-    //    for y in 0..height {
-    //        let offset = bytes_per_row * y + bytes_per_pixel * x;
-    //        let (r, g, b) = (buffer[offset], buffer[offset + 1], buffer[offset + 2]);
-    //        result.put_pixel(x as u32, y as u32, Rgba([r, g, b, 255]));
-    //    }
-    // }
-
     Ok(bmp)
 }
 
