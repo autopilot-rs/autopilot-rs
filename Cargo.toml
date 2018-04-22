@@ -24,4 +24,4 @@ cocoa = { git = "https://github.com/servo/core-foundation-rs.git" }
 x11 = "*"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "*", features = ["winuser", "winbase"] }
+winapi = { version = "*", features = ["libloaderapi", "minwindef", "winbase", "winuser"] }

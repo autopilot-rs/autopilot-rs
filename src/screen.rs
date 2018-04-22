@@ -64,10 +64,39 @@ fn system_size() -> Size {
 #[cfg(windows)]
 fn system_scale() -> f64 {
     use winapi::um::winuser::GetDesktopWindow;
-    unsafe { SetProcessDPIAware() };
-    let window = unsafe { GetDesktopWindow() };
-    let dpi = unsafe { GetDpiForWindow(window) };
-    dpi as f64 / 96.0
+    use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
+    use winapi::shared::minwindef::FARPROC;
+    use std::ffi::CString;
+    use std;
+    let user32_module = unsafe { LoadLibraryA(CString::new("user32.dll").unwrap().as_ptr()) };
+    let set_process_dpi_aware_ptr: FARPROC = unsafe {
+        GetProcAddress(
+            user32_module,
+            CString::new("SetProcessDPIAware").unwrap().as_ptr(),
+        )
+    };
+    let get_dpi_for_window_ptr: FARPROC = unsafe {
+        GetProcAddress(
+            user32_module,
+            CString::new("GetDpiForWindow").unwrap().as_ptr(),
+        )
+    };
+
+    // Guard against old Windows versions.
+    if set_process_dpi_aware_ptr != std::ptr::null_mut()
+        && get_dpi_for_window_ptr != std::ptr::null_mut()
+    {
+        let set_process_dpi_aware: SetProcessDPIAwareSignature =
+            unsafe { std::mem::transmute(set_process_dpi_aware_ptr) };
+        let get_dpi_for_window: GetDPIForWindowSignature =
+            unsafe { std::mem::transmute(get_dpi_for_window_ptr) };
+        unsafe { set_process_dpi_aware() };
+        let window = unsafe { GetDesktopWindow() };
+        let dpi = unsafe { get_dpi_for_window(window) };
+        dpi as f64 / 96.0
+    } else {
+        1.0
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -92,8 +121,6 @@ use winapi::shared::windef::HWND;
 use libc;
 
 #[cfg(windows)]
-#[link(name = "user32")]
-extern "system" {
-    fn SetProcessDPIAware();
-    fn GetDpiForWindow(hWnd: HWND) -> libc::c_uint;
-}
+type SetProcessDPIAwareSignature = unsafe extern "C" fn();
+#[cfg(windows)]
+type GetDPIForWindowSignature = unsafe extern "C" fn(HWND) -> libc::c_uint;
