@@ -24,6 +24,7 @@ extern crate core_graphics;
 #[cfg(windows)]
 extern crate winapi;
 #[cfg(target_os = "linux")]
+#[macro_use(defer)]
 extern crate scopeguard;
 #[cfg(target_os = "linux")]
 extern crate x11;

@@ -222,6 +222,7 @@ impl From<Button> for XButton {
 fn system_move_to(point: Point) {
     use scopeguard::guard;
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
+        let scaled_point = point.scaled(screen::scale());
         let root_window = guard(x11::xlib::XDefaultRootWindow(*display), |w| {
             x11::xlib::XDestroyWindow(*display, *w);
         });
@@ -233,8 +234,8 @@ fn system_move_to(point: Point) {
             0,
             0,
             0,
-            point.x as i32,
-            point.y as i32,
+            scaled_point.x as i32,
+            scaled_point.y as i32,
         );
         x11::xlib::XFlush(*display);
     });
@@ -262,7 +263,7 @@ fn system_location() -> Point {
             &mut unused_d,
             &mut unused_e,
         );
-        Point::new(x as f64, y as f64)
+        Point::new(x as f64, y as f64).scaled(screen::scale())
     })
 }
 

@@ -568,8 +568,8 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 
 #[cfg(target_os = "linux")]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
-    use image::RgbImage;
     internal::X_MAIN_DISPLAY.with(|display| {
+        let scaled_rect = rect.scaled(screen::scale());
         let root_window = unsafe {
             guard(x11::xlib::XDefaultRootWindow(*display), |w| {
                 x11::xlib::XDestroyWindow(*display, *w);
@@ -580,10 +580,10 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
                 x11::xlib::XGetImage(
                     *display,
                     *root_window,
-                    rect.origin.x as i32,
-                    rect.origin.y as i32,
-                    rect.size.width as u32,
-                    rect.size.height as u32,
+                    scaled_rect.origin.x as i32,
+                    scaled_rect.origin.y as i32,
+                    scaled_rect.size.width as u32,
+                    scaled_rect.size.height as u32,
                     x11::xlib::XAllPlanes(),
                     x11::xlib::ZPixmap,
                 ),

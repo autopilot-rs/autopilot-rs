@@ -73,16 +73,17 @@ fn system_scale() -> f64 {
 #[cfg(target_os = "linux")]
 fn system_size() -> Size {
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
+        let scale_factor = scale();
         let screen = x11::xlib::XDefaultScreen(*display);
         let width = x11::xlib::XDisplayWidth(*display, screen) as f64;
         let height = x11::xlib::XDisplayHeight(*display, screen) as f64;
-        Size::new(width, height)
+        Size::new(width, height).scaled(1.0 / scale_factor)
     })
 }
 
 #[cfg(target_os = "linux")]
 fn system_scale() -> f64 {
-    1.0
+    internal::X_SCALE_FACTOR.with(|scale| *scale)
 }
 
 #[cfg(windows)]
