@@ -39,6 +39,12 @@ impl std::fmt::Debug for Bitmap {
     }
 }
 
+impl std::cmp::PartialEq for Bitmap {
+    fn eq(&self, other: &Bitmap) -> bool {
+        self.bitmap_eq(other, None)
+    }
+}
+
 impl Bitmap {
     #[inline]
     /// Creates a bitmap from the given `DynamicImage`, and scale if given
@@ -80,9 +86,16 @@ impl Bitmap {
         }
     }
 
+    // Returns color of underlying image at the given point.
     pub fn get_pixel(&self, point: Point) -> Rgba<u8> {
         let point = point.scaled(self.multiplier()).round();
         self.image.get_pixel(point.x as u32, point.y as u32)
+    }
+
+    /// Returns true if bitmap is equal to needle with the given tolerance.
+    pub fn bitmap_eq(&self, needle: &Bitmap, tolerance: Option<f64>) -> bool {
+        self.size == needle.size && self.scale == needle.scale
+            && self.is_needle_at(Point::ZERO, needle, tolerance)
     }
 
     /// Attempts to find `color` inside `rect` in `bmp` from the given
