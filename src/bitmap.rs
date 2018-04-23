@@ -75,7 +75,7 @@ impl Bitmap {
         if !self.bounds().is_rect_visible(rect) {
             Err(ImageError::DimensionError)
         } else {
-            let rect = rect.scaled(self.multiplier()).round();
+            let rect = rect.scaled(self.scale).round();
             let cropped_image = self.image.crop(
                 rect.origin.x as u32,
                 rect.origin.y as u32,
@@ -550,13 +550,13 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
             || SelectObject(*screen_mem, *dib as HGDIOBJ) == std::ptr::null_mut()
             || BitBlt(
                 *screen_mem,
-                rect.origin.x as i32,
-                rect.origin.y as i32,
+                0,
+                0,
                 rect.size.width as i32,
                 rect.size.height as i32,
                 *screen,
-                0,
-                0,
+                rect.origin.x as i32,
+                rect.origin.y as i32,
                 SRCCOPY,
             ) == 0
         {
@@ -632,11 +632,11 @@ fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
     use core_graphics::context::CGContext;
     use core_graphics::geometry::{CGSize, CG_ZERO_POINT};
     use core_graphics::image::{CGImageAlphaInfo, CGImageByteOrderInfo};
-    use image::RgbaImage;
 
     let width: libc::size_t = image.width();
     let height: libc::size_t = image.height();
     let bits_per_component: libc::size_t = image.bits_per_component();
+    let bytes_per_pixel: libc::size_t = image.bits_per_pixel() / 8;
     let bytes_per_row: libc::size_t = image.bytes_per_row();
     let space = image.color_space();
     let flags: u32 = CGImageByteOrderInfo::CGImageByteOrder32Big as u32
@@ -658,15 +658,21 @@ fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
     context.draw_image(rect, &image);
 
     let buffer: &[u8] = context.data();
-    let image = RgbaImage::from_raw(width as u32, height as u32, buffer.to_vec()).unwrap();
-    let dynimage = DynamicImage::ImageRgba8(image);
+    let mut dynimage = DynamicImage::new_rgb8(width as u32, height as u32);
+    for x in 0..width {
+        for y in 0..height {
+            let offset = bytes_per_row * y + bytes_per_pixel * x;
+            let (r, g, b) = (buffer[offset], buffer[offset + 1], buffer[offset + 2]);
+            dynimage.put_pixel(x as u32, y as u32, Rgba([r, g, b, 255]));
+        }
+    }
     let bmp = Bitmap::new(dynimage, Some(screen::scale()));
     Ok(bmp)
 }
 
 #[cfg(test)]
 mod tests {
-    use bitmap::{colors_match, Bitmap};
+    use bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
     use image::{DynamicImage, Rgba, RgbaImage};
     use geometry::{Point, Rect, Size};
     use quickcheck::{Arbitrary, Gen, TestResult};
@@ -694,6 +700,15 @@ mod tests {
     #[should_panic]
     fn test_colors_match_high_tolerance() {
         colors_match(Rgba([0, 0, 0, 255]), Rgba([0, 0, 0, 255]), 1.1);
+    }
+
+    #[test]
+    fn test_capture_screen_portion() {
+        let rect = Rect::new(Point::new(100.0, 100.0), Size::new(100.0, 100.0));
+        let portion: Bitmap = capture_screen_portion(rect).unwrap();
+        let mut uncropped: Bitmap = capture_screen().unwrap();
+        let cropped: Bitmap = uncropped.cropped(rect).unwrap();
+        assert_eq!(portion, cropped)
     }
 
     quickcheck! {

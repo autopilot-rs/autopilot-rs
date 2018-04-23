@@ -1,21 +1,41 @@
 extern crate autopilot;
 extern crate image;
+use autopilot::geometry::{Point, Rect, Size};
 use std::fs::File;
 use std::path::Path;
 
 fn main() {
     let bmp = autopilot::bitmap::capture_screen().expect("Unable to capture screen");
-    let path = Path::new(file!())
+    let portion = autopilot::bitmap::capture_screen_portion(Rect::new(
+        Point::new(100.0, 100.0),
+        Size::new(100.0, 100.0),
+    )).expect("Unable to capture screen portion");
+    let bmp_path = Path::new(file!())
         .parent()
         .unwrap()
         .parent()
         .unwrap()
-        .join("test.png");
-    let ref mut fout = File::create(&path).expect("Unable to create output file");
+        .join("screenshot.png");
+    let portion_path = Path::new(file!())
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("screenshot_cropped.png");
+    let ref mut bmp_fout = File::create(&bmp_path).expect("Unable to create output file");
+    let ref mut portion_fout = File::create(&portion_path).expect("Unable to create output file");
     let _ = bmp.image
-        .save(fout, image::PNG)
-        .expect("Unable to save image");
+        .save(bmp_fout, image::PNG)
+        .expect("Unable to save screenshot");
+    let _ = portion
+        .image
+        .save(portion_fout, image::PNG)
+        .expect("Unable to save cropped screenshot");
     println!("Scale factor {}", autopilot::screen::scale());
     println!("Screen size {}", autopilot::screen::size());
-    println!("Saved screenshot at {}", path.to_str().unwrap_or(""));
+    println!("Saved screenshot at {}", bmp_path.to_str().unwrap_or(""));
+    println!(
+        "Saved cropped screenshot at {}",
+        portion_path.to_str().unwrap_or("")
+    );
 }
