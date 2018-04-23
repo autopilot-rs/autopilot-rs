@@ -181,8 +181,8 @@ fn system_move_to(point: Point) {
     use winapi::um::winuser::{mouse_event, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_MOVE};
     let screen_size = screen::size().scaled(screen::scale());
     let scaled_point = point.scaled(screen::scale());
-    let x = scaled_point.x as DWORD * (0xFFFF / screen_size.width as DWORD);
-    let y = scaled_point.y as DWORD * (0xFFFF / screen_size.height as DWORD);
+    let x = scaled_point.x as DWORD * 0xFFFF / screen_size.width as DWORD;
+    let y = scaled_point.y as DWORD * 0xFFFF / screen_size.height as DWORD;
     unsafe {
         mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, x, y, 0, 0);
     };
