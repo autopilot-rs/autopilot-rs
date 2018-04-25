@@ -64,8 +64,7 @@ impl Bitmap {
         Rect::new(Point::ZERO, self.size)
     }
 
-    /// Copies image to pasteboard. Currently only supported on Windows and
-    /// macOS.
+    /// Copies image to pasteboard. Currently only supported on macOS.
     pub fn copy_to_pasteboard(&self) -> ImageResult<()> {
         self.system_copy_to_pasteboard()
     }
@@ -378,49 +377,7 @@ impl Bitmap {
 
     #[cfg(windows)]
     fn system_copy_to_pasteboard(&self) -> ImageResult<()> {
-        use image::ImageFormat;
-        use winapi::um::winuser::{CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
-                                  CF_DIB};
-        use winapi::um::winbase::{GlobalAlloc, GlobalFree, GlobalLock, GlobalUnlock};
-        use winapi::um::wingdi::BITMAPFILEHEADER;
-        let mut buffer: Vec<u8> = Vec::new();
-        try!(self.image.save(&mut buffer, ImageFormat::BMP));
-        unsafe {
-            if OpenClipboard(std::ptr::null_mut()) == 0 {
-                return Err(ImageError::NotEnoughData);
-            }
-        }
-        defer!(unsafe {
-            CloseClipboard();
-        });
-        unsafe {
-            if EmptyClipboard() == 0 {
-                return Err(ImageError::NotEnoughData);
-            }
-        }
-
-        let header_size = std::mem::size_of::<BITMAPFILEHEADER>();
-        let buflen = buffer.len() - header_size;
-        let handle = guard(unsafe { GlobalAlloc(GMEM_MOVEABLE, buflen) }, |h| unsafe {
-            GlobalFree(*h);
-        });
-        if *handle == std::ptr::null_mut() {
-            return Err(ImageError::NotEnoughData);
-        }
-
-        unsafe {
-            std::ptr::copy_nonoverlapping(
-                (buffer.as_mut_ptr() as *mut u8).offset(header_size as isize),
-                GlobalLock(*handle) as *mut u8,
-                buflen,
-            );
-            GlobalUnlock(*handle);
-
-            if SetClipboardData(CF_DIB, *handle) == std::ptr::null_mut() {
-                return Err(ImageError::NotEnoughData);
-            }
-        };
-        Ok(())
+        panic!("Unsupported OS");
     }
 
     #[cfg(target_os = "linux")]
