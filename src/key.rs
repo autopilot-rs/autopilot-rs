@@ -27,7 +27,6 @@ pub enum Flag {
 
     // Special key identifiers.
     Help,
-    SecondaryFn,
 }
 
 /// Device-independent key codes.
@@ -258,7 +257,6 @@ impl From<Flag> for CGEventFlags {
             Flag::Alt => event::CGEventFlags::CGEventFlagAlternate,
             Flag::Meta => event::CGEventFlags::CGEventFlagCommand,
             Flag::Help => event::CGEventFlags::CGEventFlagHelp,
-            Flag::SecondaryFn => event::CGEventFlags::CGEventFlagSecondaryFn,
         }
     }
 }
@@ -346,7 +344,6 @@ impl From<Flag> for WinKeyCode {
             Flag::Alt => winuser::VK_MENU,
             Flag::Meta => winuser::VK_LWIN,
             Flag::Help => winuser::VK_HELP,
-            Flag::SecondaryFn => winuser::VK_HELP, // TODO
         };
         win_code as WinKeyCode
     }
@@ -447,7 +444,6 @@ impl From<Flag> for XKeyCode {
             Flag::Alt => x11::keysym::XK_Alt_L,
             Flag::Meta => x11::keysym::XK_Meta_L,
             Flag::Help => x11::keysym::XK_Help,
-            Flag::SecondaryFn => x11::keysym::XK_function,
         };
         x_code as XKeyCode
     }
