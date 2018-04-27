@@ -1,5 +1,6 @@
 [![Docs](https://docs.rs/autopilot/badge.svg)](https://docs.rs/autopilot)
 [![Crates.io](https://img.shields.io/crates/v/autopilot.svg)](https://crates.io/crates/autopilot)
+[![Build Status](https://travis-ci.org/autopilot-rs/autopilot-rs.svg?branch=master)](https://travis-ci.org/autopilot-rs/autopilot-rs)
 
 # AutoPilot
 

@@ -1,0 +1,17 @@
+language: rust
+matrix:
+  allow_failures:
+    - rust: nightly
+  include:
+    - name: macOS
+      os: osx
+  fast_finish: true
+
+before_install:
+  - if command -v apt-get; then sudo apt-get install -y libx11-dev libxtst-dev; fi
+rust:
+  - stable
+  - beta
+  - nightly
+script:
+  - cargo build --verbose --all
