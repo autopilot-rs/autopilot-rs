@@ -1,6 +1,9 @@
-# autopilot-rs
+[![Docs](https://docs.rs/autopilot/badge.svg)](https://docs.rs/autopilot)
+[![Crates.io](https://img.shields.io/crates/v/autopilot.svg)](https://crates.io/crates/autopilot)
 
-autopilot-rs is a Rust port of the Python C extension
+# AutoPilot
+
+AutoPilot is a Rust port of the Python C extension
 [AutoPy](http://autopy.org), a simple, cross-platform GUI automation library for
 Python. For more information, see the
 [README](https://github.com/autopilot-rs/autopy#autopy-introduction-and-tutorial)
