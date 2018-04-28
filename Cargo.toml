@@ -26,9 +26,9 @@ quickcheck = "*"
 pkg-config = "0.3.11"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-core-foundation = { git = "https://github.com/servo/core-foundation-rs.git" }
-core-graphics = { git = "https://github.com/servo/core-foundation-rs.git" }
-cocoa = { git = "https://github.com/servo/core-foundation-rs.git" }
+core-foundation = "0.5.1"
+core-graphics = "0.13.0"
+cocoa = "0.14.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 x11 = "2.17.5"
