@@ -2,6 +2,16 @@
 name = "autopilot"
 version = "0.1.0"
 authors = ["Michael Sanders <michael.sanders@fastmail.com>"]
+homepage = "https://www.autopy.org"
+keywords = ["cross-platform", "gui" ,"automation"]
+categories = [
+    "api-bindings",
+    "gui",
+    "os",
+    "os::macos-apis",
+    "os::unix-apis",
+    "os::windows-apis"
+]
 
 [dependencies]
 image = "0.19"
