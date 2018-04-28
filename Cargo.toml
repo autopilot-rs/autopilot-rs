@@ -9,7 +9,6 @@ keywords = ["cross-platform", "gui" ,"automation"]
 categories = [
     "api-bindings",
     "gui",
-    "os",
     "os::macos-apis",
     "os::unix-apis",
     "os::windows-apis"
@@ -22,7 +21,7 @@ rand = "0.4.2"
 scopeguard = "0.3.3"
 
 [dev-dependencies]
-quickcheck = "*"
+quickcheck = "0.6.2"
 
 [build-dependencies]
 pkg-config = "0.3.11"
