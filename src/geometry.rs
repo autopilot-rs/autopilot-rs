@@ -1,3 +1,4 @@
+use std;
 use std::fmt;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -12,10 +13,24 @@ pub struct Point {
     pub y: f64,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Hash)]
 pub struct Rect {
     pub origin: Point,
     pub size: Size,
+}
+
+impl std::hash::Hash for Size {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (self.width as i64).hash(state);
+        (self.height as i64).hash(state);
+    }
+}
+
+impl std::hash::Hash for Point {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (self.x as i64).hash(state);
+        (self.y as i64).hash(state);
+    }
 }
 
 impl Point {

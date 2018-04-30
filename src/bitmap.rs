@@ -45,6 +45,16 @@ impl std::cmp::PartialEq for Bitmap {
     }
 }
 
+impl std::hash::Hash for Bitmap {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        if let Some(rgb_image) = self.image.as_rgba8() {
+            rgb_image.hash(state);
+        }
+        self.size.hash(state);
+        (self.scale as i64).hash(state);
+    }
+}
+
 impl Bitmap {
     #[inline]
     /// Creates a bitmap from the given `DynamicImage`, and scale if given
