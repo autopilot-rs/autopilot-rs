@@ -9,7 +9,8 @@ use screen;
 use std;
 
 #[cfg(target_os = "macos")]
-use core_graphics::event::{CGEvent, CGEventTapLocation, CGEventType, CGMouseButton};
+use core_graphics::event::{CGEvent, CGEventTapLocation, CGEventType, CGMouseButton,
+                           ScrollEventUnit};
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::CGEventSource;
 #[cfg(target_os = "macos")]
@@ -24,11 +25,17 @@ use internal;
 #[cfg(target_os = "linux")]
 use x11;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Button {
     Left,
     Middle,
     Right,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ScrollDirection {
+    Up,
+    Down,
 }
 
 #[derive(Debug)]
@@ -101,6 +108,11 @@ pub fn toggle(button: Button, down: bool) {
     system_toggle(button, down);
 }
 
+/// Performs a scroll event in a direction a given number of times.
+pub fn scroll(direction: ScrollDirection, clicks: u32) {
+    system_scroll(direction, clicks);
+}
+
 #[cfg(target_os = "macos")]
 impl Button {
     fn event_type(&self, down: bool) -> CGEventType {
@@ -153,6 +165,20 @@ fn system_toggle(button: Button, down: bool) {
     event.unwrap().post(CGEventTapLocation::HID);
 }
 
+#[cfg(target_os = "macos")]
+fn system_scroll(direction: ScrollDirection, clicks: u32) {
+    for _ in 0..clicks {
+        let wheel_count = if direction == ScrollDirection::Up {
+            10
+        } else {
+            -10
+        };
+        let source = CGEventSource::new(HIDSystemState).unwrap();
+        let event = CGEvent::new_scroll_event(source, ScrollEventUnit::LINE, 1, wheel_count, 0, 0);
+        event.unwrap().post(CGEventTapLocation::HID);
+    }
+}
+
 #[cfg(windows)]
 fn mouse_event_for_button(button: Button, down: bool) -> DWORD {
     use winapi::um::winuser::{MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN,
@@ -198,6 +224,25 @@ fn system_toggle(button: Button, down: bool) {
     };
 }
 
+#[cfg(windows)]
+fn system_scroll(direction: ScrollDirection, clicks: u32) {
+    use winapi::um::winuser::{mouse_event, MOUSEEVENTF_WHEEL, WHEEL_DELTA};
+    unsafe {
+        let multiplier: DWORD = if direction == ScrollDirection::Up {
+            1
+        } else {
+            -1
+        };
+        mouse_event(
+            MOUSEEVENTF_WHEEL,
+            0,
+            0,
+            WHEEL_DELTA as DWORD * clicks as DWORD * multiplier,
+            0,
+        );
+    };
+}
+
 #[cfg(target_os = "linux")]
 impl From<Button> for XButton {
     fn from(button: Button) -> XButton {
@@ -205,6 +250,16 @@ impl From<Button> for XButton {
             Button::Left => X_BUTTON_LEFT,
             Button::Middle => X_BUTTON_MIDDLE,
             Button::Right => X_BUTTON_RIGHT,
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+impl From<ScrollDirection> for XButton {
+    fn from(direction: ScrollDirection) -> XButton {
+        match direction {
+            ScrollDirection::Up => X_BUTTON_SCROLL_UP,
+            ScrollDirection::Down => X_BUTTON_SCROLL_DOWN,
         }
     }
 }
@@ -259,15 +314,32 @@ fn system_location() -> Point {
 }
 
 #[cfg(target_os = "linux")]
-fn system_toggle(button: Button, down: bool) {
-    internal::X_MAIN_DISPLAY.with(|display| unsafe {
+fn send_button_event(display: *mut x11::xlib::Display, button: XButton, down: bool) {
+    unsafe {
         XTestFakeButtonEvent(
-            *display,
+            display,
             XButton::from(button),
             down as i32,
             x11::xlib::CurrentTime,
         );
-        x11::xlib::XFlush(*display);
+        x11::xlib::XFlush(display);
+    };
+}
+
+#[cfg(target_os = "linux")]
+fn system_toggle(button: Button, down: bool) {
+    internal::X_MAIN_DISPLAY.with(|display| {
+        send_button_event(*display, XButton::from(button), down);
+    });
+}
+
+#[cfg(target_os = "linux")]
+fn system_scroll(direction: ScrollDirection, clicks: u32) {
+    internal::X_MAIN_DISPLAY.with(|display| {
+        for _ in 0..clicks {
+            send_button_event(*display, XButton::from(direction), true);
+            send_button_event(*display, XButton::from(direction), false);
+        }
     });
 }
 
@@ -280,6 +352,10 @@ const X_BUTTON_LEFT: XButton = 1;
 const X_BUTTON_MIDDLE: XButton = 2;
 #[cfg(target_os = "linux")]
 const X_BUTTON_RIGHT: XButton = 3;
+#[cfg(target_os = "linux")]
+const X_BUTTON_SCROLL_UP: XButton = 4;
+#[cfg(target_os = "linux")]
+const X_BUTTON_SCROLL_DOWN: XButton = 5;
 
 #[cfg(target_os = "linux")]
 extern "C" {
