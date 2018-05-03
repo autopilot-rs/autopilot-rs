@@ -1,8 +1,8 @@
 //! autopilot is a simple, cross-platform GUI automation library for Rust.
-mod internal;
 pub mod alert;
 pub mod bitmap;
 pub mod geometry;
+mod internal;
 pub mod key;
 pub mod mouse;
 pub mod screen;
@@ -26,8 +26,7 @@ extern crate winapi;
 #[cfg(target_os = "linux")]
 #[macro_use(defer)]
 extern crate scopeguard;
+#[cfg(windows)]
+extern crate scopeguard;
 #[cfg(target_os = "linux")]
 extern crate x11;
-#[cfg(windows)]
-#[macro_use(defer)]
-extern crate scopeguard;

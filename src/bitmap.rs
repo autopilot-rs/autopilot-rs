@@ -445,9 +445,6 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 }
 
 #[cfg(windows)]
-const GMEM_MOVEABLE: u32 = 0x0002;
-
-#[cfg(windows)]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     use winapi::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER, BI_RGB};
     use winapi::um::wingdi::{DeleteDC, DeleteObject};
