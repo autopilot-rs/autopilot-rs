@@ -61,6 +61,7 @@ pub enum KeyCode {
     Meta,
     CapsLock,
     Shift,
+    Tab,
 }
 
 pub trait KeyCodeConvertible {
@@ -201,7 +202,7 @@ fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
 #[cfg(target_os = "linux")]
 fn flags_for_char<'a>(character: char) -> &'a [Flag] {
     const UPPERCASE_CHARACTERS: &[char] = &[
-        '!', '#', '$', '%', '&', '(', ')', '*', '+', ':', '<', '>', '?', '@', '{', '|', '}', '~'
+        '!', '#', '$', '%', '&', '(', ')', '*', '+', ':', '<', '>', '?', '@', '{', '|', '}', '~',
     ];
     if character.is_uppercase() || UPPERCASE_CHARACTERS.contains(&character) {
         &[Flag::Shift]
@@ -294,6 +295,7 @@ impl From<KeyCode> for CGKeyCode {
             KeyCode::Meta => event::KeyCode::COMMAND,
             KeyCode::CapsLock => event::KeyCode::CAPS_LOCK,
             KeyCode::Shift => event::KeyCode::SHIFT,
+            KeyCode::Tab => event::KeyCode::TAB,
         }
     }
 }
@@ -383,6 +385,7 @@ impl From<KeyCode> for WinKeyCode {
             KeyCode::Meta => winuser::VK_LWIN,
             KeyCode::CapsLock => winuser::VK_CAPITAL,
             KeyCode::Shift => winuser::VK_SHIFT,
+            KeyCode::Tab => winuser::VK_TAB,
         };
         win_code as WinKeyCode
     }
@@ -482,6 +485,7 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::Meta => x11::keysym::XK_Meta_L,
             KeyCode::CapsLock => x11::keysym::XK_Caps_Lock,
             KeyCode::Shift => x11::keysym::XK_Shift_L,
+            KeyCode::Tab => x11::keysym::XK_Tab,
         };
         x_code as XKeyCode
     }
