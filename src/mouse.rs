@@ -38,42 +38,34 @@ pub enum MouseError {
     OutOfBounds,
 }
 
-/// Gradually moves the mouse to the given coordinate in a straight line.
+/// Gradually moves the mouse to a coordinate in a straight line in the given
+/// time frame (in seconds). If no duration is given a 1 millisecond delay is
+/// defaulted to between mouse movements.
 ///
 /// Returns `MouseError` if coordinate is outside the screen boundaries.
-pub fn smooth_move(destination: Point) -> Result<(), MouseError> {
-    let mut position = location();
-    let mut velocity = Point::ZERO;
-    let screen_size = screen::size();
+pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), MouseError> {
+    if !screen::is_point_visible(destination) {
+        return Err(MouseError::OutOfBounds);
+    }
 
-    loop {
-        let distance = (position.x - destination.x).hypot(position.y - destination.y);
-        if distance <= 1.0 {
-            break;
-        }
+    let start_position = location();
+    let distance = (start_position.x - destination.x).hypot(start_position.y - destination.y);
+    let step_count = distance.ceil() as i64;
+    let interval: u64 = duration
+        .map(|d| (d * 1000.0) / distance)
+        .unwrap_or(1.0)
+        .round() as u64;
 
-        let gravity: f64 = rand::thread_rng().gen_range(5.0, 500.0);
-        velocity.x += (gravity * (destination.x - position.x)) / distance;
-        velocity.y += (gravity * (destination.y - position.y)) / distance;
-
-        // Normalize velocity to get a unit vector of length 1.
-        let velo_distance: f64 = velocity.x.hypot(velocity.y);
-        velocity.x /= velo_distance;
-        velocity.y /= velo_distance;
-
-        position.x += (velocity.x + 0.5).floor();
-        position.y += (velocity.y + 0.5).floor();
-
-        // Make sure we are still in the screen boundaries.
-        if position.x < 0.0 || position.y < 0.0 || position.x >= screen_size.width
-            || position.y >= screen_size.height
-        {
-            return Err(MouseError::OutOfBounds);
-        }
+    for step in 1..step_count + 1 {
+        let position = Point::new(
+            (destination.x - start_position.x) * (step as f64 / step_count as f64)
+                + start_position.x,
+            (destination.y - start_position.y) * (step as f64 / step_count as f64)
+                + start_position.y,
+        );
 
         try!(move_to(position));
-        let duration: u64 = rand::thread_rng().gen_range(1, 3);
-        std::thread::sleep(std::time::Duration::from_millis(duration));
+        std::thread::sleep(std::time::Duration::from_millis(interval));
     }
 
     Ok(())
