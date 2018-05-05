@@ -5,9 +5,9 @@
 //! system, where the origin is at the top left.
 
 use geometry::Point;
-use screen;
 use rand;
 use rand::Rng;
+use screen;
 use std;
 
 #[cfg(target_os = "macos")]
@@ -22,9 +22,9 @@ use core_graphics::geometry::CGPoint;
 use winapi::shared::minwindef::DWORD;
 
 #[cfg(target_os = "linux")]
-use x11;
-#[cfg(target_os = "linux")]
 use internal;
+#[cfg(target_os = "linux")]
+use x11;
 
 #[derive(Copy, Clone, Debug)]
 pub enum Button {
@@ -182,8 +182,8 @@ fn system_move_to(point: Point) {
 
 #[cfg(windows)]
 fn system_location() -> Point {
-    use winapi::um::winuser::GetCursorPos;
     use winapi::shared::windef::POINT;
+    use winapi::um::winuser::GetCursorPos;
     let mut point: POINT = POINT { x: 0, y: 0 };
     unsafe {
         GetCursorPos(&mut point);

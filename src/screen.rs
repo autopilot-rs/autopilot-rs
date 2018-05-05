@@ -1,8 +1,8 @@
 //! This module contains functions for working with the screen.
 extern crate image;
+use self::image::{GenericImage, ImageResult, Rgba};
 use bitmap;
 use geometry::{Point, Rect, Size};
-use self::image::{GenericImage, ImageResult, Rgba};
 
 #[cfg(target_os = "macos")]
 use core_graphics::display::CGDisplay;
@@ -63,11 +63,11 @@ fn system_size() -> Size {
 
 #[cfg(windows)]
 fn system_scale() -> f64 {
-    use winapi::um::winuser::GetDesktopWindow;
-    use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
-    use winapi::shared::minwindef::FARPROC;
-    use std::ffi::CString;
     use std;
+    use std::ffi::CString;
+    use winapi::shared::minwindef::FARPROC;
+    use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
+    use winapi::um::winuser::GetDesktopWindow;
     let user32_module = unsafe { LoadLibraryA(CString::new("user32.dll").unwrap().as_ptr()) };
     let set_process_dpi_aware_ptr: FARPROC = unsafe {
         GetProcAddress(
@@ -116,9 +116,9 @@ fn system_scale() -> f64 {
 }
 
 #[cfg(windows)]
-use winapi::shared::windef::HWND;
-#[cfg(windows)]
 use libc;
+#[cfg(windows)]
+use winapi::shared::windef::HWND;
 
 #[cfg(windows)]
 type SetProcessDPIAwareSignature = unsafe extern "C" fn();

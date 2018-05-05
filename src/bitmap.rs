@@ -5,8 +5,8 @@
 extern crate image;
 
 use geometry::{Point, Rect, Size};
-use screen;
 use image::{DynamicImage, GenericImage, ImageError, ImageResult, Pixel, Rgba};
+use screen;
 use std;
 
 #[cfg(target_os = "macos")]
@@ -18,10 +18,10 @@ use libc;
 
 #[cfg(target_os = "linux")]
 use internal;
-#[cfg(target_os = "linux")]
-use x11;
 #[cfg(not(target_os = "macos"))]
 use scopeguard::guard;
+#[cfg(target_os = "linux")]
+use x11;
 
 #[derive(Clone)]
 pub struct Bitmap {
@@ -446,14 +446,14 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 
 #[cfg(windows)]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
-    use winapi::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER, BI_RGB};
-    use winapi::um::wingdi::{DeleteDC, DeleteObject};
-    use winapi::um::winuser::{GetDC, ReleaseDC};
     use winapi::ctypes::c_void;
     use winapi::shared::minwindef::DWORD;
     use winapi::shared::windef::HGDIOBJ;
     use winapi::um::wingdi::{BitBlt, CreateCompatibleDC, CreateDIBSection, SelectObject,
                              DIB_RGB_COLORS, SRCCOPY};
+    use winapi::um::wingdi::{DeleteDC, DeleteObject};
+    use winapi::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER, BI_RGB};
+    use winapi::um::winuser::{GetDC, ReleaseDC};
 
     let rect = rect.scaled(screen::scale());
     let bytes_per_pixel: usize = 4;
@@ -637,11 +637,11 @@ fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
 #[cfg(test)]
 mod tests {
     use bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
-    use image::{DynamicImage, Rgba, RgbaImage};
     use geometry::{Point, Rect, Size};
+    use image::GenericImage;
+    use image::{DynamicImage, Rgba, RgbaImage};
     use quickcheck::{Arbitrary, Gen, TestResult};
     use rand::{thread_rng, Rng};
-    use image::GenericImage;
 
     impl Arbitrary for Bitmap {
         fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
