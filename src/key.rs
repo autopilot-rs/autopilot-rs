@@ -97,6 +97,7 @@ pub fn type_string(string: &str, wpm: Option<f64>, noise: Option<f64>, flags: &[
     } else {
         (1000.0 / cps).round() as u64
     };
+    let ms_per_stroke = (ms_per_character as f64 / 2.0).round() as u64;
 
     for c in string.chars() {
         let tolerance = (noise * ms_per_character as f64).round() as u64;
@@ -106,17 +107,17 @@ pub fn type_string(string: &str, wpm: Option<f64>, noise: Option<f64>, flags: &[
             0
         };
 
-        tap(Character(c), flags);
-        std::thread::sleep(std::time::Duration::from_millis(ms_per_character + noise));
+        tap(Character(c), ms_per_stroke, flags);
+        std::thread::sleep(std::time::Duration::from_millis(ms_per_stroke + noise));
     }
 }
 
 /// Convenience wrapper around `toggle()` that holds down and then releases the
-/// given key and modifier flags.
-pub fn tap<T: KeyCodeConvertible + Copy>(key: T, flags: &[Flag]) {
-    let ms: u64 = rand::thread_rng().gen_range(5, 20);
+/// given key and modifier flags. Delay between pressing and releasing the key
+/// can be controlled using the delay_ms parameter.
+pub fn tap<T: KeyCodeConvertible + Copy>(key: T, delay_ms: u64, flags: &[Flag]) {
     toggle(key, true, flags);
-    std::thread::sleep(std::time::Duration::from_millis(ms));
+    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
     toggle(key, false, flags);
 }
 
