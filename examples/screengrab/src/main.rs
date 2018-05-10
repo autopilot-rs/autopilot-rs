@@ -1,7 +1,6 @@
 extern crate autopilot;
 extern crate image;
 use autopilot::geometry::{Point, Rect, Size};
-use std::fs::File;
 use std::path::Path;
 
 fn main() {
@@ -22,14 +21,12 @@ fn main() {
         .parent()
         .unwrap()
         .join("screenshot_cropped.png");
-    let ref mut bmp_fout = File::create(&bmp_path).expect("Unable to create output file");
-    let ref mut portion_fout = File::create(&portion_path).expect("Unable to create output file");
     let _ = bmp.image
-        .save(bmp_fout, image::PNG)
+        .save(&bmp_path)
         .expect("Unable to save screenshot");
     let _ = portion
         .image
-        .save(portion_fout, image::PNG)
+        .save(&portion_path)
         .expect("Unable to save cropped screenshot");
     println!("Scale factor {}", autopilot::screen::scale());
     println!("Screen size {}", autopilot::screen::size());
