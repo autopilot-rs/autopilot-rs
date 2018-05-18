@@ -114,15 +114,16 @@ pub fn type_string(string: &str, wpm: f64, noise: f64, flags: &[Flag]) {
 /// given key and modifier flags. Delay between pressing and releasing the key
 /// can be controlled using the `delay_ms` parameter.
 pub fn tap<T: KeyCodeConvertible + Copy>(key: T, delay_ms: u64, flags: &[Flag]) {
-    toggle(key, true, flags);
+    toggle(key, true, flags, delay_ms);
     std::thread::sleep(std::time::Duration::from_millis(delay_ms));
-    toggle(key, false, flags);
+    toggle(key, false, flags, delay_ms);
 }
 
 /// Holds down the given key or keycode if `down` is `true`, or releases it if
 /// not. Characters are converted to a keycode corresponding to the current
-/// keyboard layout.
-pub fn toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+/// keyboard layout. Delay between pressing and releasing the modifier keys can
+/// be controlled using the `modifier_delay_ms` parameter.
+pub fn toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag], modifier_delay_ms: u64) {
     let key_flags = key.character().map(|c| flags_for_char(c)).unwrap_or(&[]);
     let mut appended_flags: Vec<Flag> = Vec::with_capacity(flags.len() + key_flags.len());
     appended_flags.extend_from_slice(flags);
@@ -131,7 +132,7 @@ pub fn toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
             appended_flags.push(*flag);
         }
     }
-    system_toggle(key, down, &appended_flags);
+    system_toggle(key, down, &appended_flags, modifier_delay_ms);
 }
 
 #[cfg(target_os = "macos")]
@@ -310,7 +311,12 @@ fn cg_event_mask_for_flags(flags: &[Flag]) -> CGEventFlags {
 }
 
 #[cfg(target_os = "macos")]
-fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+fn system_toggle<T: KeyCodeConvertible>(
+    key: T,
+    down: bool,
+    flags: &[Flag],
+    _modifier_delay_ms: u64,
+) {
     use core_graphics::event::CGEventType::*;
     use core_graphics::event::{CGEventTapLocation, CGEventType};
     let source = CGEventSource::new(HIDSystemState).unwrap();
@@ -391,23 +397,24 @@ impl From<KeyCode> for WinKeyCode {
 }
 
 #[cfg(windows)]
-fn win_send_key_event(keycode: WinKeyCode, down: bool, wait: bool) {
+fn win_send_key_event(keycode: WinKeyCode, down: bool, delay_ms: u64) {
     use winapi::um::winuser::{keybd_event, KEYEVENTF_KEYUP};
     let flags = if down { 0 } else { KEYEVENTF_KEYUP };
     unsafe { keybd_event(keycode as u8, 0, flags, 0) };
-
-    if wait {
-        let ms: u64 = rand::thread_rng().gen_range(5, 20);
-        std::thread::sleep(std::time::Duration::from_millis(ms));
-    }
+    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
 }
 
 #[cfg(windows)]
-fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+fn system_toggle<T: KeyCodeConvertible>(
+    key: T,
+    down: bool,
+    flags: &[Flag],
+    modifier_delay_ms: u64,
+) {
     use winapi::um::winuser::{SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
                               KEYEVENTF_UNICODE};
     for &flag in flags.iter() {
-        win_send_key_event(WinKeyCode::from(flag), down, true);
+        win_send_key_event(WinKeyCode::from(flag), down, modifier_delay_ms);
     }
     if let Some(character) = key.character() {
         let flags = if down { 0 } else { KEYEVENTF_KEYUP };
@@ -430,7 +437,7 @@ fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
             }
         }
     } else {
-        win_send_key_event(key.code(), down, false);
+        win_send_key_event(key.code(), down, 0);
     }
 }
 
@@ -491,7 +498,12 @@ impl From<KeyCode> for XKeyCode {
 }
 
 #[cfg(target_os = "linux")]
-fn x_send_key_event(display: *mut x11::xlib::Display, keycode: XKeyCode, down: bool, wait: bool) {
+fn x_send_key_event(
+    display: *mut x11::xlib::Display,
+    keycode: XKeyCode,
+    down: bool,
+    delay_ms: u64,
+) {
     unsafe {
         XTestFakeKeyEvent(
             display,
@@ -502,19 +514,21 @@ fn x_send_key_event(display: *mut x11::xlib::Display, keycode: XKeyCode, down: b
         x11::xlib::XFlush(display);
     };
 
-    if wait {
-        let ms: u64 = rand::thread_rng().gen_range(5, 20);
-        std::thread::sleep(std::time::Duration::from_millis(ms));
-    }
+    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
 }
 
 #[cfg(target_os = "linux")]
-fn system_toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag]) {
+fn system_toggle<T: KeyCodeConvertible>(
+    key: T,
+    down: bool,
+    flags: &[Flag],
+    modifier_delay_ms: u64,
+) {
     internal::X_MAIN_DISPLAY.with(|display| {
         for &flag in flags.iter() {
-            x_send_key_event(*display, XKeyCode::from(flag), down, true);
+            x_send_key_event(*display, XKeyCode::from(flag), down, modifier_delay_ms);
         }
-        x_send_key_event(*display, key.code(), down, false);
+        x_send_key_event(*display, key.code(), down, 0);
     })
 }
 
