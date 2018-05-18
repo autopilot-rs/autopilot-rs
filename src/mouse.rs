@@ -5,8 +5,6 @@
 //! system, where the origin is at the top left.
 
 use geometry::Point;
-use rand;
-use rand::Rng;
 use screen;
 use std;
 
@@ -72,11 +70,12 @@ pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), Mous
 }
 
 /// A convenience wrapper around `toggle()` that holds down and then releases
-/// the given mouse button.
-pub fn click(button: Button) {
-    let ms: u64 = rand::thread_rng().gen_range(50, 100);
+/// the given mouse button. Delay between pressing and releasing the key can be
+/// controlled using the `delay_ms` parameter. If `delay` is not given, the
+/// value defaults to 100 ms.
+pub fn click(button: Button, delay_ms: Option<u64>) {
     toggle(button, true);
-    std::thread::sleep(std::time::Duration::from_millis(ms));
+    std::thread::sleep(std::time::Duration::from_millis(delay_ms.unwrap_or(100)));
     toggle(button, true);
 }
 
