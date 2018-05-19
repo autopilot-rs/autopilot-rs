@@ -1,5 +1,5 @@
 [package]
-name = "autopilot-sine-mouse-wave"
+name = "autopilot-scroll-mouse"
 version = "0.1.0"
 
 [dependencies]
