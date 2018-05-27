@@ -83,7 +83,7 @@ pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), Mous
 pub fn click(button: Button, delay_ms: Option<u64>) {
     toggle(button, true);
     std::thread::sleep(std::time::Duration::from_millis(delay_ms.unwrap_or(100)));
-    toggle(button, true);
+    toggle(button, false);
 }
 
 /// Immediately moves the mouse to the given coordinate.
