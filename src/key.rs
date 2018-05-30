@@ -87,7 +87,7 @@ pub struct Code(pub KeyCode);
 
 /// Attempts to simulate typing a string at the given WPM, or as fast as
 /// possible if the WPM is 0.
-pub fn type_string(string: &str, wpm: f64, noise: f64, flags: &[Flag]) {
+pub fn type_string(string: &str, flags: &[Flag], wpm: f64, noise: f64) {
     let cpm = wpm * 5.0;
     let cps = cpm / 60.0;
     let ms_per_character: u64 = if cps == 0.0 {
@@ -105,7 +105,7 @@ pub fn type_string(string: &str, wpm: f64, noise: f64, flags: &[Flag]) {
             0
         };
 
-        tap(Character(c), ms_per_stroke, flags);
+        tap(Character(c), flags, ms_per_stroke);
         std::thread::sleep(std::time::Duration::from_millis(ms_per_stroke + noise));
     }
 }
@@ -113,7 +113,7 @@ pub fn type_string(string: &str, wpm: f64, noise: f64, flags: &[Flag]) {
 /// Convenience wrapper around `toggle()` that holds down and then releases the
 /// given key and modifier flags. Delay between pressing and releasing the key
 /// can be controlled using the `delay_ms` parameter.
-pub fn tap<T: KeyCodeConvertible + Copy>(key: T, delay_ms: u64, flags: &[Flag]) {
+pub fn tap<T: KeyCodeConvertible + Copy>(key: T, flags: &[Flag], delay_ms: u64) {
     toggle(key, true, flags, delay_ms);
     std::thread::sleep(std::time::Duration::from_millis(delay_ms));
     toggle(key, false, flags, delay_ms);
