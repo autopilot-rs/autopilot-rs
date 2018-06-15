@@ -203,6 +203,7 @@ fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
 fn flags_for_char<'a>(character: char) -> &'a [Flag] {
     const UPPERCASE_CHARACTERS: &[char] = &[
         '!', '#', '$', '%', '&', '(', ')', '*', '+', ':', '<', '>', '?', '@', '{', '|', '}', '~',
+        ':',
     ];
     if character.is_uppercase() || UPPERCASE_CHARACTERS.contains(&character) {
         &[Flag::Shift]
