@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.1.5
+
+### Added
+- Added constant for spacebar key.
+
+### Fixed
+- Fixed linux arrow keycode constant definitions.
+- Fixed colon showing up as semicolon on Windows.
+
 ## 0.1.4
 
 ### Fixed
