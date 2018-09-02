@@ -62,6 +62,7 @@ pub enum KeyCode {
     CapsLock,
     Shift,
     Tab,
+    Space,
 }
 
 pub trait KeyCodeConvertible {
@@ -297,6 +298,7 @@ impl From<KeyCode> for CGKeyCode {
             KeyCode::CapsLock => event::KeyCode::CAPS_LOCK,
             KeyCode::Shift => event::KeyCode::SHIFT,
             KeyCode::Tab => event::KeyCode::TAB,
+            KeyCode::Space => event::KeyCode::SPACE,
         }
     }
 }
@@ -392,6 +394,7 @@ impl From<KeyCode> for WinKeyCode {
             KeyCode::CapsLock => winuser::VK_CAPITAL,
             KeyCode::Shift => winuser::VK_SHIFT,
             KeyCode::Tab => winuser::VK_TAB,
+            KeyCode::Space => winuser::VK_SPACE,
         };
         win_code as WinKeyCode
     }
@@ -493,6 +496,7 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::CapsLock => x11::keysym::XK_Caps_Lock,
             KeyCode::Shift => x11::keysym::XK_Shift_L,
             KeyCode::Tab => x11::keysym::XK_Tab,
+            KeyCode::Space => x11::keysym::XK_space,
         };
         x_code as XKeyCode
     }
