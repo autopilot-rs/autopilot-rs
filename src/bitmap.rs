@@ -472,7 +472,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
             biClrUsed: 0,
             biClrImportant: 0,
         },
-        bmiColors: [],
+        bmiColors: unsafe { std::mem::zeroed() },
     };
 
     // Copy entire screen.
