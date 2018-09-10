@@ -373,7 +373,7 @@ impl Bitmap {
         unsafe {
             let data = NSData::dataWithBytes_length_(
                 nil,
-                buffer.as_ptr() as *const libc::c_void,
+                buffer.as_ptr() as *const std::os::raw::c_void,
                 buffer.len() as u64,
             );
             let image = NSImage::initWithData_(NSImage::alloc(nil), data);
