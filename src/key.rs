@@ -12,6 +12,8 @@ use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "linux")]
 use internal;
 #[cfg(target_os = "linux")]
+use libc;
+#[cfg(target_os = "linux")]
 use x11;
 
 use self::rand::Rng;
@@ -186,6 +188,7 @@ fn char_to_key_code(character: char) -> XKeyCode {
         _ => unsafe {
             let mut buf = [0; 2];
             x11::xlib::XStringToKeysym(character.encode_utf8(&mut buf).as_ptr() as *const i8)
+                as XKeyCode
         },
     }
 }
@@ -512,7 +515,7 @@ fn x_send_key_event(
     unsafe {
         XTestFakeKeyEvent(
             display,
-            x11::xlib::XKeysymToKeycode(display, keycode),
+            x11::xlib::XKeysymToKeycode(display, keycode as libc::c_ulong),
             down as i32,
             x11::xlib::CurrentTime,
         );
