@@ -108,6 +108,7 @@ thread_local!(pub static X_SCALE_FACTOR: f64 = {
                 }
             }
         }
-        dpi / 96.0
+        let scale = dpi / 96.0;
+        (scale * 100.0).floor() / 100.0
     })
 });
