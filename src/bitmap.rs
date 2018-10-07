@@ -62,9 +62,9 @@ impl Bitmap {
     pub fn new(image: DynamicImage, scale: Option<f64>) -> Bitmap {
         let scale: f64 = scale.unwrap_or(1.0);
         Bitmap {
-            size: Size::new(image.width() as f64 / scale, image.height() as f64 / scale),
-            image: image,
-            scale: scale,
+            size: Size::new(f64::from(image.width()) / scale, f64::from(image.height()) / scale),
+            image,
+            scale,
         }
     }
 
@@ -304,7 +304,7 @@ impl Bitmap {
         start_point: Option<Point>,
         predicate: F,
     ) -> Option<Point> {
-        let rect = rect.unwrap_or(self.bounds());
+        let rect = rect.unwrap_or_else(|| self.bounds());
         let start_point = start_point.unwrap_or(self.bounds().origin);
         if !self.bounds().is_rect_visible(rect) {
             panic!(
@@ -346,7 +346,7 @@ impl Bitmap {
         predicate: &'a Fn(Point) -> bool,
         matched: &'a mut FnMut(Point) -> (),
     ) {
-        let rect = rect.unwrap_or(self.bounds());
+        let rect = rect.unwrap_or_else(|| self.bounds());
         let mut start_point = start_point.unwrap_or(self.bounds().origin);
         loop {
             if let Some(point) = self.find(Some(rect), Some(start_point), predicate) {
@@ -412,13 +412,13 @@ fn colors_match(c1: Rgba<u8>, c2: Rgba<u8>, tolerance: f64) -> bool {
 
     let (r1, g1, b1, _) = c1.channels4();
     let (r2, g2, b2, _) = c2.channels4();
-    let d1: f64 = (r1 as f64 - r2 as f64).abs();
-    let d2: f64 = (g1 as f64 - g2 as f64).abs();
-    let d3: f64 = (b1 as f64 - b2 as f64).abs();
+    let d1: f64 = (f64::from(r1) - f64::from(r2)).abs();
+    let d2: f64 = (f64::from(g1) - f64::from(g2)).abs();
+    let d3: f64 = (f64::from(b1) - f64::from(b2)).abs();
     (d1 * d1 + d2 * d2 + d3 * d3).sqrt() <= tolerance * MAX_TOLERANCE_DELTA
 }
 
-const MAX_TOLERANCE_DELTA: f64 = 441.6729559301; // => (3.0f64 * 255.0f64 * 255.0f64).sqrt();
+const MAX_TOLERANCE_DELTA: f64 = 441.672_955_930_1; // => (3.0f64 * 255.0f64 * 255.0f64).sqrt();
 
 /// Returns a screengrab of the entire main display.
 pub fn capture_screen() -> ImageResult<Bitmap> {
@@ -569,7 +569,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
                 },
             )
         };
-        if *image_ptr == std::ptr::null_mut() {
+        if image_ptr.is_null() {
             return Err(ImageError::NotEnoughData);
         }
         let image = unsafe { **image_ptr };

@@ -61,7 +61,7 @@ pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), Mous
         .unwrap_or(1.0)
         .round() as u64;
 
-    for step in 1..step_count + 1 {
+    for step in 1..=step_count {
         let position = Point::new(
             (destination.x - start_position.x) * (step as f64 / step_count as f64)
                 + start_position.x,
@@ -310,7 +310,7 @@ fn system_location() -> Point {
             &mut unused_d,
             &mut unused_e,
         );
-        Point::new(x as f64, y as f64).scaled(screen::scale())
+        Point::new(f64::from(x), f64::from(y)).scaled(screen::scale())
     })
 }
 
@@ -319,7 +319,7 @@ fn send_button_event(display: *mut x11::xlib::Display, button: XButton, down: bo
     unsafe {
         XTestFakeButtonEvent(
             display,
-            XButton::from(button),
+            button,
             down as i32,
             x11::xlib::CurrentTime,
         );

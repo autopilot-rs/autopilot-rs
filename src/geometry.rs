@@ -1,13 +1,13 @@
 use std;
 use std::fmt;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub struct Size {
     pub width: f64,
     pub height: f64,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -26,10 +26,22 @@ impl std::hash::Hash for Size {
     }
 }
 
+impl std::cmp::PartialEq for Size {
+    fn eq(&self, other: &Size) -> bool {
+        self.width == other.width && self.height == other.height
+    }
+}
+
 impl std::hash::Hash for Point {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         (self.x as i64).hash(state);
         (self.y as i64).hash(state);
+    }
+}
+
+impl std::cmp::PartialEq for Point {
+    fn eq(&self, other: &Point) -> bool {
+        self.x == other.x && self.y == other.y
     }
 }
 
@@ -38,7 +50,7 @@ impl Point {
 
     #[inline]
     pub fn new(x: f64, y: f64) -> Point {
-        Point { x: x, y: y }
+        Point { x, y }
     }
 
     #[inline]
@@ -60,10 +72,7 @@ impl Size {
 
     #[inline]
     pub fn new(width: f64, height: f64) -> Size {
-        Size {
-            width: width,
-            height: height,
-        }
+        Size { width, height }
     }
 
     #[inline]
@@ -85,10 +94,7 @@ impl Rect {
 
     #[inline]
     pub fn new(origin: Point, size: Size) -> Rect {
-        Rect {
-            origin: origin,
-            size: size,
-        }
+        Rect { origin, size }
     }
 
     #[inline]
