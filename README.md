@@ -40,7 +40,7 @@ fn sine_mouse_wave() {
 extern crate autopilot;
 
 fn main() {
-    autopilot::key::type_string("Hello, world!", None, None, &[]);
+    autopilot::key::type_string("Hello, world!", &[], 200., 0.);
     let _ = autopilot::alert::alert("Hello, world!", None, None, None);
 }
 ```
