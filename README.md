@@ -13,6 +13,8 @@ Currently supported on macOS, Windows, and X11 with the XTest extension.
 
 ## Examples
 
+The following will move the mouse across the screen as a sine wave:
+
 ```rust
 extern crate autopilot;
 extern crate rand;
@@ -35,6 +37,8 @@ fn sine_mouse_wave() {
     }
 }
 ```
+
+This will enter the keys from the string "Hello, world!" and then prompt an alert with the same text:
 
 ```rust
 extern crate autopilot;
