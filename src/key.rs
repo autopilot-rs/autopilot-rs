@@ -108,7 +108,7 @@ pub fn type_string(string: &str, flags: &[Flag], wpm: f64, noise: f64) {
             0
         };
 
-        tap(Character(c), flags, ms_per_stroke);
+        tap(&Character(c), flags, ms_per_stroke);
         std::thread::sleep(std::time::Duration::from_millis(ms_per_stroke + noise));
     }
 }
@@ -116,7 +116,7 @@ pub fn type_string(string: &str, flags: &[Flag], wpm: f64, noise: f64) {
 /// Convenience wrapper around `toggle()` that holds down and then releases the
 /// given key and modifier flags. Delay between pressing and releasing the key
 /// can be controlled using the `delay_ms` parameter.
-pub fn tap<T: KeyCodeConvertible + Copy>(key: T, flags: &[Flag], delay_ms: u64) {
+pub fn tap<T: KeyCodeConvertible + Copy>(key: &T, flags: &[Flag], delay_ms: u64) {
     toggle(key, true, flags, delay_ms);
     std::thread::sleep(std::time::Duration::from_millis(delay_ms));
     toggle(key, false, flags, delay_ms);
@@ -126,8 +126,8 @@ pub fn tap<T: KeyCodeConvertible + Copy>(key: T, flags: &[Flag], delay_ms: u64) 
 /// not. Characters are converted to a keycode corresponding to the current
 /// keyboard layout. Delay between pressing and releasing the modifier keys can
 /// be controlled using the `modifier_delay_ms` parameter.
-pub fn toggle<T: KeyCodeConvertible>(key: T, down: bool, flags: &[Flag], modifier_delay_ms: u64) {
-    let key_flags = key.character().map(|c| flags_for_char(c)).unwrap_or(&[]);
+pub fn toggle<T: KeyCodeConvertible>(key: &T, down: bool, flags: &[Flag], modifier_delay_ms: u64) {
+    let key_flags = key.character().map(flags_for_char).unwrap_or(&[]);
     let mut appended_flags: Vec<Flag> = Vec::with_capacity(flags.len() + key_flags.len());
     appended_flags.extend_from_slice(flags);
     for flag in key_flags.iter() {
@@ -151,40 +151,40 @@ fn char_to_key_code(character: char) -> CGKeyCode {
 #[cfg(target_os = "linux")]
 fn char_to_key_code(character: char) -> XKeyCode {
     match character {
-        ' ' => x11::keysym::XK_space as XKeyCode,
-        '!' => x11::keysym::XK_exclam as XKeyCode,
-        '#' => x11::keysym::XK_numbersign as XKeyCode,
-        '$' => x11::keysym::XK_dollar as XKeyCode,
-        '%' => x11::keysym::XK_percent as XKeyCode,
-        '&' => x11::keysym::XK_ampersand as XKeyCode,
-        '(' => x11::keysym::XK_parenleft as XKeyCode,
-        ')' => x11::keysym::XK_parenright as XKeyCode,
-        '*' => x11::keysym::XK_asterisk as XKeyCode,
-        '+' => x11::keysym::XK_plus as XKeyCode,
-        ',' => x11::keysym::XK_comma as XKeyCode,
-        '-' => x11::keysym::XK_minus as XKeyCode,
-        '.' => x11::keysym::XK_period as XKeyCode,
-        '/' => x11::keysym::XK_slash as XKeyCode,
-        ':' => x11::keysym::XK_colon as XKeyCode,
-        ';' => x11::keysym::XK_semicolon as XKeyCode,
-        '<' => x11::keysym::XK_less as XKeyCode,
-        '=' => x11::keysym::XK_equal as XKeyCode,
-        '>' => x11::keysym::XK_greater as XKeyCode,
-        '?' => x11::keysym::XK_question as XKeyCode,
-        '@' => x11::keysym::XK_at as XKeyCode,
-        '[' => x11::keysym::XK_bracketleft as XKeyCode,
-        '\'' => x11::keysym::XK_quotedbl as XKeyCode,
-        '\\' => x11::keysym::XK_backslash as XKeyCode,
-        ']' => x11::keysym::XK_bracketright as XKeyCode,
-        '^' => x11::keysym::XK_asciicircum as XKeyCode,
-        '_' => x11::keysym::XK_underscore as XKeyCode,
-        '`' => x11::keysym::XK_grave as XKeyCode,
-        '{' => x11::keysym::XK_braceleft as XKeyCode,
-        '|' => x11::keysym::XK_bar as XKeyCode,
-        '}' => x11::keysym::XK_braceright as XKeyCode,
-        '~' => x11::keysym::XK_asciitilde as XKeyCode,
-        '\t' => x11::keysym::XK_Tab as XKeyCode,
-        '\n' => x11::keysym::XK_Return as XKeyCode,
+        ' ' => XKeyCode::from(x11::keysym::XK_space),
+        '!' => XKeyCode::from(x11::keysym::XK_exclam),
+        '#' => XKeyCode::from(x11::keysym::XK_numbersign),
+        '$' => XKeyCode::from(x11::keysym::XK_dollar),
+        '%' => XKeyCode::from(x11::keysym::XK_percent),
+        '&' => XKeyCode::from(x11::keysym::XK_ampersand),
+        '(' => XKeyCode::from(x11::keysym::XK_parenleft),
+        ')' => XKeyCode::from(x11::keysym::XK_parenright),
+        '*' => XKeyCode::from(x11::keysym::XK_asterisk),
+        '+' => XKeyCode::from(x11::keysym::XK_plus),
+        ',' => XKeyCode::from(x11::keysym::XK_comma),
+        '-' => XKeyCode::from(x11::keysym::XK_minus),
+        '.' => XKeyCode::from(x11::keysym::XK_period),
+        '/' => XKeyCode::from(x11::keysym::XK_slash),
+        ':' => XKeyCode::from(x11::keysym::XK_colon),
+        ';' => XKeyCode::from(x11::keysym::XK_semicolon),
+        '<' => XKeyCode::from(x11::keysym::XK_less),
+        '=' => XKeyCode::from(x11::keysym::XK_equal),
+        '>' => XKeyCode::from(x11::keysym::XK_greater),
+        '?' => XKeyCode::from(x11::keysym::XK_question),
+        '@' => XKeyCode::from(x11::keysym::XK_at),
+        '[' => XKeyCode::from(x11::keysym::XK_bracketleft),
+        '\'' => XKeyCode::from(x11::keysym::XK_quotedbl),
+        '\\' => XKeyCode::from(x11::keysym::XK_backslash),
+        ']' => XKeyCode::from(x11::keysym::XK_bracketright),
+        '^' => XKeyCode::from(x11::keysym::XK_asciicircum),
+        '_' => XKeyCode::from(x11::keysym::XK_underscore),
+        '`' => XKeyCode::from(x11::keysym::XK_grave),
+        '{' => XKeyCode::from(x11::keysym::XK_braceleft),
+        '|' => XKeyCode::from(x11::keysym::XK_bar),
+        '}' => XKeyCode::from(x11::keysym::XK_braceright),
+        '~' => XKeyCode::from(x11::keysym::XK_asciitilde),
+        '\t' => XKeyCode::from(x11::keysym::XK_Tab),
+        '\n' => XKeyCode::from(x11::keysym::XK_Return),
         _ => unsafe {
             let mut buf = [0; 2];
             x11::xlib::XStringToKeysym(character.encode_utf8(&mut buf).as_ptr() as *const i8)
@@ -318,7 +318,7 @@ fn cg_event_mask_for_flags(flags: &[Flag]) -> CGEventFlags {
 
 #[cfg(target_os = "macos")]
 fn system_toggle<T: KeyCodeConvertible>(
-    key: T,
+    key: &T,
     down: bool,
     flags: &[Flag],
     _modifier_delay_ms: u64,
@@ -413,7 +413,7 @@ fn win_send_key_event(keycode: WinKeyCode, down: bool, delay_ms: u64) {
 
 #[cfg(windows)]
 fn system_toggle<T: KeyCodeConvertible>(
-    key: T,
+    key: &T,
     down: bool,
     flags: &[Flag],
     modifier_delay_ms: u64,
@@ -461,7 +461,7 @@ impl From<Flag> for XKeyCode {
             Flag::Meta => x11::keysym::XK_Meta_L,
             Flag::Help => x11::keysym::XK_Help,
         };
-        x_code as XKeyCode
+        XKeyCode::from(x_code)
     }
 }
 
@@ -501,7 +501,7 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::Tab => x11::keysym::XK_Tab,
             KeyCode::Space => x11::keysym::XK_space,
         };
-        x_code as XKeyCode
+        XKeyCode::from(x_code)
     }
 }
 
@@ -527,7 +527,7 @@ fn x_send_key_event(
 
 #[cfg(target_os = "linux")]
 fn system_toggle<T: KeyCodeConvertible>(
-    key: T,
+    key: &T,
     down: bool,
     flags: &[Flag],
     modifier_delay_ms: u64,
