@@ -438,7 +438,7 @@ pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     use core_graphics::display::CGDisplay;
     if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
-        macos_load_cgimage(image)
+        macos_load_cgimage(&image)
     } else {
         Err(ImageError::NotEnoughData)
     }
@@ -591,7 +591,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
+fn macos_load_cgimage(image: &CGImage) -> ImageResult<Bitmap> {
     use core_graphics::base::CGFloat;
     use core_graphics::context::CGContext;
     use core_graphics::geometry::{CGSize, CG_ZERO_POINT};

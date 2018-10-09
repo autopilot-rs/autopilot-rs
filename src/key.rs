@@ -327,7 +327,7 @@ fn system_toggle<T: KeyCodeConvertible>(
     use core_graphics::event::{CGEventTapLocation, CGEventType};
     let source = CGEventSource::new(HIDSystemState).unwrap();
 
-    if flags.len() == 0 {
+    if flags.is_empty() {
         if let Some(character) = key.character() {
             let mut buf = [0; 2];
             let event = CGEvent::new_keyboard_event(source, 0, down).unwrap();
