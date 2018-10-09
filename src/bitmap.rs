@@ -5,7 +5,7 @@
 extern crate image;
 
 use geometry::{Point, Rect, Size};
-use image::{DynamicImage, GenericImage, ImageError, ImageResult, Pixel, Rgba};
+use image::{DynamicImage, GenericImage, GenericImageView, ImageError, ImageResult, Pixel, Rgba};
 use screen;
 use std;
 
@@ -638,7 +638,7 @@ fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
 mod tests {
     use bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
     use geometry::{Point, Rect, Size};
-    use image::GenericImage;
+    use image::{GenericImage, GenericImageView};
     use image::{DynamicImage, Rgba, RgbaImage};
     use quickcheck::{Arbitrary, Gen, TestResult};
     use rand::{thread_rng, Rng};

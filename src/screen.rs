@@ -1,6 +1,6 @@
 //! This module contains functions for working with the screen.
 extern crate image;
-use self::image::{GenericImage, ImageResult, Rgba};
+use self::image::{GenericImageView, ImageResult, Rgba};
 use bitmap;
 use geometry::{Point, Rect, Size};
 
