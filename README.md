@@ -1,6 +1,7 @@
 [![Docs](https://docs.rs/autopilot/badge.svg)](https://docs.rs/autopilot)
 [![Crates.io](https://img.shields.io/crates/v/autopilot.svg)](https://crates.io/crates/autopilot)
-[![Build Status](https://travis-ci.org/autopilot-rs/autopilot-rs.svg?branch=master)](https://travis-ci.org/autopilot-rs/autopilot-rs)
+[![Travis Build Status](https://travis-ci.org/autopilot-rs/autopilot-rs.svg?branch=master)](https://travis-ci.org/autopilot-rs/autopilot-rs)
+[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/ilcq8ev8ht49eqbx?svg=true)](https://ci.appveyor.com/project/msanders/autopilot-rs)
 
 # AutoPilot
 

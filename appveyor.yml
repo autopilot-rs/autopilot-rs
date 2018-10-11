@@ -1,0 +1,21 @@
+environment:
+  matrix:
+    # Stable 64-bit MSVC
+    - channel: stable
+      target: x86_64-pc-windows-msvc
+    # Stable 32-bit MSVC
+    - channel: stable
+      target: i686-pc-windows-msvc
+
+
+# From https://github.com/starkat99/appveyor-rust/blob/master/appveyor.yml
+install:
+  - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
+  - rustup-init -yv --default-toolchain stable --default-host %target%
+  - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+  - rustc -vV
+  - cargo -vV
+
+build_script:
+  - cargo build
+  - cargo test --verbose
