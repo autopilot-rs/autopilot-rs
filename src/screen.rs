@@ -56,8 +56,8 @@ fn system_scale() -> f64 {
 fn system_size() -> Size {
     use winapi::um::winuser::{GetSystemMetrics, SM_CXSCREEN, SM_CYSCREEN};
     let scale_factor = scale();
-    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) } as f64;
-    let height = unsafe { GetSystemMetrics(SM_CYSCREEN) } as f64;
+    let width = f64::from(unsafe { GetSystemMetrics(SM_CXSCREEN) });
+    let height = f64::from(unsafe { GetSystemMetrics(SM_CYSCREEN) });
     Size::new(width, height).scaled(1.0 / scale_factor)
 }
 
@@ -68,23 +68,26 @@ fn system_scale() -> f64 {
     use winapi::shared::minwindef::FARPROC;
     use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
     use winapi::um::winuser::GetDesktopWindow;
-    let user32_module = unsafe { LoadLibraryA(CString::new("user32.dll").unwrap().as_ptr()) };
+    let user32_c_str = CString::new("user32.dll").unwrap();
+    let set_process_dpi_aware_c_str = CString::new("SetProcessDPIAware").unwrap();
+    let get_dpi_for_window_c_str = CString::new("GetDpiForWindow").unwrap();
+    let user32_module = unsafe { LoadLibraryA(user32_c_str.as_ptr()) };
     let set_process_dpi_aware_ptr: FARPROC = unsafe {
         GetProcAddress(
             user32_module,
-            CString::new("SetProcessDPIAware").unwrap().as_ptr(),
+            set_process_dpi_aware_c_str.as_ptr(),
         )
     };
     let get_dpi_for_window_ptr: FARPROC = unsafe {
         GetProcAddress(
             user32_module,
-            CString::new("GetDpiForWindow").unwrap().as_ptr(),
+            get_dpi_for_window_c_str.as_ptr(),
         )
     };
 
     // Guard against old Windows versions.
-    if set_process_dpi_aware_ptr != std::ptr::null_mut()
-        && get_dpi_for_window_ptr != std::ptr::null_mut()
+    if !set_process_dpi_aware_ptr.is_null()
+        && !get_dpi_for_window_ptr.is_null()
     {
         let set_process_dpi_aware: SetProcessDPIAwareSignature =
             unsafe { std::mem::transmute(set_process_dpi_aware_ptr) };
@@ -93,7 +96,7 @@ fn system_scale() -> f64 {
         unsafe { set_process_dpi_aware() };
         let window = unsafe { GetDesktopWindow() };
         let dpi = unsafe { get_dpi_for_window(window) };
-        dpi as f64 / 96.0
+        f64::from(dpi) / 96.0
     } else {
         1.0
     }

@@ -481,7 +481,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
             ReleaseDC(std::ptr::null_mut(), *s);
         })
     };
-    if *screen == std::ptr::null_mut() {
+    if screen.is_null() {
         return Err(ImageError::NotEnoughData);
     }
 
@@ -510,8 +510,8 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
         })
     };
     unsafe {
-        if *screen_mem == std::ptr::null_mut()
-            || SelectObject(*screen_mem, *dib as HGDIOBJ) == std::ptr::null_mut()
+        if screen_mem.is_null()
+            || SelectObject(*screen_mem, *dib as HGDIOBJ).is_null()
             || BitBlt(
                 *screen_mem,
                 0,
