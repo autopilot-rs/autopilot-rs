@@ -115,9 +115,9 @@ pub fn scroll(direction: ScrollDirection, clicks: u32) {
 
 #[cfg(target_os = "macos")]
 impl Button {
-    fn event_type(&self, down: bool) -> CGEventType {
+    fn event_type(self, down: bool) -> CGEventType {
         use core_graphics::event::CGEventType::*;
-        match (*self, down) {
+        match (self, down) {
             (Button::Left, true) => LeftMouseDown,
             (Button::Left, false) => LeftMouseUp,
             (Button::Right, true) => RightMouseDown,

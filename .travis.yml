@@ -9,9 +9,13 @@ matrix:
 
 before_install:
   - if command -v apt-get; then sudo apt-get install -y libx11-dev libxtst-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start; sleep 3; fi
+  - rustup component add clippy-preview
 rust:
   - stable
   - beta
   - nightly
 script:
   - cargo build --verbose --all
+  - cargo clippy -- -D warnings
+  - cargo test --verbose

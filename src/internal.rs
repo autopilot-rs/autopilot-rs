@@ -31,7 +31,7 @@ impl From<CGPoint> for Point {
 #[cfg(windows)]
 impl From<POINT> for Point {
     fn from(point: POINT) -> Point {
-        Point::new(point.x as f64, point.y as f64)
+        Point::new(f64::from(point.x), f64::from(point.y))
     }
 }
 

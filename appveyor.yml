@@ -6,6 +6,7 @@ environment:
   # Stable 64-bit MSVC
     - channel: stable
       target: x86_64-pc-windows-msvc
+      clippy: lint
   # Stable 32-bit MSVC
     - channel: stable
       target: i686-pc-windows-msvc
@@ -27,6 +28,7 @@ environment:
   # Stable 64-bit GNU
     - channel: stable
       target: x86_64-pc-windows-gnu
+      clippy: lint
   # Stable 32-bit GNU
     - channel: stable
       target: i686-pc-windows-gnu
@@ -43,6 +45,10 @@ environment:
     - channel: nightly
       target: i686-pc-windows-gnu
 
+matrix:
+  fast_finish: true
+  allow_failures:
+    - channel: nightly
 
 # From https://github.com/starkat99/appveyor-rust/blob/master/appveyor.yml
 install:
@@ -54,4 +60,17 @@ install:
 
 build_script:
   - cargo build
+
+test_script:
   - cargo test --verbose
+
+for:
+  -
+    matrix:
+      only:
+        - clippy: lint # Only run clippy on some targets
+    before_test:
+      - rustup component add clippy-preview
+    test_script:
+      - cargo clippy -- -D warnings
+      - cargo test --verbose

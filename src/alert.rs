@@ -151,7 +151,7 @@ fn system_alert(
         default_button,
     ];
     let message_programs = ["gmessage", "gxmessage", "kmessage", "xmessage"];
-    for program in message_programs.iter() {
+    for program in &message_programs {
         match std::process::Command::new(program)
             .args(&args)
             .spawn()

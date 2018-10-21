@@ -438,7 +438,7 @@ pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     use core_graphics::display::CGDisplay;
     if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
-        macos_load_cgimage(image)
+        macos_load_cgimage(&image)
     } else {
         Err(ImageError::NotEnoughData)
     }
@@ -481,7 +481,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
             ReleaseDC(std::ptr::null_mut(), *s);
         })
     };
-    if *screen == std::ptr::null_mut() {
+    if screen.is_null() {
         return Err(ImageError::NotEnoughData);
     }
 
@@ -510,8 +510,8 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
         })
     };
     unsafe {
-        if *screen_mem == std::ptr::null_mut()
-            || SelectObject(*screen_mem, *dib as HGDIOBJ) == std::ptr::null_mut()
+        if screen_mem.is_null()
+            || SelectObject(*screen_mem, *dib as HGDIOBJ).is_null()
             || BitBlt(
                 *screen_mem,
                 0,
@@ -591,7 +591,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 }
 
 #[cfg(target_os = "macos")]
-fn macos_load_cgimage(image: CGImage) -> ImageResult<Bitmap> {
+fn macos_load_cgimage(image: &CGImage) -> ImageResult<Bitmap> {
     use core_graphics::base::CGFloat;
     use core_graphics::context::CGContext;
     use core_graphics::geometry::{CGSize, CG_ZERO_POINT};
