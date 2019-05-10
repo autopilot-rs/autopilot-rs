@@ -554,7 +554,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
         let scaled_rect = rect.scaled(screen::scale());
         let root_window = unsafe {
             guard(x11::xlib::XDefaultRootWindow(*display), |w| {
-                x11::xlib::XDestroyWindow(*display, *w);
+                x11::xlib::XDestroyWindow(*display, w);
             })
         };
         let image_ptr = unsafe {
@@ -570,7 +570,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
                     x11::xlib::ZPixmap,
                 ),
                 |i| {
-                    x11::xlib::XDestroyImage(*i);
+                    x11::xlib::XDestroyImage(i);
                 },
             )
         };

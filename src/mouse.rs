@@ -268,7 +268,7 @@ fn system_move_to(point: Point) {
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
         let scaled_point = point.scaled(screen::scale());
         let root_window = guard(x11::xlib::XDefaultRootWindow(*display), |w| {
-            x11::xlib::XDestroyWindow(*display, *w);
+            x11::xlib::XDestroyWindow(*display, w);
         });
         x11::xlib::XWarpPointer(
             *display,
