@@ -62,7 +62,10 @@ impl Bitmap {
     pub fn new(image: DynamicImage, scale: Option<f64>) -> Bitmap {
         let scale: f64 = scale.unwrap_or(1.0);
         Bitmap {
-            size: Size::new(f64::from(image.width()) / scale, f64::from(image.height()) / scale),
+            size: Size::new(
+                f64::from(image.width()) / scale,
+                f64::from(image.height()) / scale,
+            ),
             image,
             scale,
         }
@@ -103,7 +106,8 @@ impl Bitmap {
 
     /// Returns true if bitmap is equal to needle with the given tolerance.
     pub fn bitmap_eq(&self, needle: &Bitmap, tolerance: Option<f64>) -> bool {
-        self.size == needle.size && self.scale == needle.scale
+        self.size == needle.size
+            && self.scale == needle.scale
             && self.is_needle_at(Point::ZERO, needle, tolerance)
     }
 
@@ -239,7 +243,6 @@ impl Bitmap {
     /// ```rust,ignore
     /// find_every_bitmap(color, tolerance, rect, start_point).count()
     /// ```
-    ///
     pub fn count_of_bitmap(
         &self,
         needle: &Bitmap,
@@ -273,7 +276,8 @@ impl Bitmap {
 
     #[inline]
     fn is_needle_oversized(&self, needle: &Bitmap) -> bool {
-        needle.scale > self.scale || needle.bounds().size.width > self.bounds().size.width
+        needle.scale > self.scale
+            || needle.bounds().size.width > self.bounds().size.width
             || needle.bounds().size.height > self.bounds().size.height
     }
 
@@ -449,8 +453,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     use winapi::ctypes::c_void;
     use winapi::shared::minwindef::DWORD;
     use winapi::shared::windef::HGDIOBJ;
-    use winapi::um::wingdi::{BitBlt, CreateCompatibleDC, CreateDIBSection, SelectObject,
-                             DIB_RGB_COLORS, SRCCOPY};
+    use winapi::um::wingdi::{
+        BitBlt, CreateCompatibleDC, CreateDIBSection, SelectObject, DIB_RGB_COLORS, SRCCOPY,
+    };
     use winapi::um::wingdi::{DeleteDC, DeleteObject};
     use winapi::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER, BI_RGB};
     use winapi::um::winuser::{GetDC, ReleaseDC};
@@ -638,8 +643,8 @@ fn macos_load_cgimage(image: &CGImage) -> ImageResult<Bitmap> {
 mod tests {
     use bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
     use geometry::{Point, Rect, Size};
-    use image::{GenericImage, GenericImageView};
     use image::{DynamicImage, Rgba, RgbaImage};
+    use image::{GenericImage, GenericImageView};
     use quickcheck::{Arbitrary, Gen, TestResult};
     use rand::prelude::SliceRandom;
     use rand::{thread_rng, Rng};

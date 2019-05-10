@@ -109,7 +109,9 @@ impl Rect {
 
     #[inline]
     pub fn is_point_visible(&self, point: Point) -> bool {
-        point.x >= self.origin.x && point.y >= self.origin.y && point.x < self.max_x()
+        point.x >= self.origin.x
+            && point.y >= self.origin.y
+            && point.x < self.max_x()
             && point.y < self.max_y()
     }
 

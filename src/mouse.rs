@@ -9,8 +9,9 @@ use screen;
 use std;
 
 #[cfg(target_os = "macos")]
-use core_graphics::event::{CGEvent, CGEventTapLocation, CGEventType, CGMouseButton,
-                           ScrollEventUnit};
+use core_graphics::event::{
+    CGEvent, CGEventTapLocation, CGEventType, CGMouseButton, ScrollEventUnit,
+};
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::CGEventSource;
 #[cfg(target_os = "macos")]
@@ -181,8 +182,10 @@ fn system_scroll(direction: ScrollDirection, clicks: u32) {
 
 #[cfg(windows)]
 fn mouse_event_for_button(button: Button, down: bool) -> DWORD {
-    use winapi::um::winuser::{MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN,
-                              MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP};
+    use winapi::um::winuser::{
+        MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP,
+        MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP,
+    };
     match (button, down) {
         (Button::Left, true) => MOUSEEVENTF_LEFTDOWN,
         (Button::Left, false) => MOUSEEVENTF_LEFTUP,
@@ -234,13 +237,7 @@ fn system_scroll(direction: ScrollDirection, clicks: u32) {
         } else {
             std::u32::MAX - (distance - 1)
         };
-        mouse_event(
-            MOUSEEVENTF_WHEEL,
-            0,
-            0,
-            units,
-            0,
-        );
+        mouse_event(MOUSEEVENTF_WHEEL, 0, 0, units, 0);
     };
 }
 
@@ -317,12 +314,7 @@ fn system_location() -> Point {
 #[cfg(target_os = "linux")]
 fn send_button_event(display: *mut x11::xlib::Display, button: XButton, down: bool) {
     unsafe {
-        XTestFakeButtonEvent(
-            display,
-            button,
-            down as i32,
-            x11::xlib::CurrentTime,
-        );
+        XTestFakeButtonEvent(display, button, down as i32, x11::xlib::CurrentTime);
         x11::xlib::XFlush(display);
     };
 }

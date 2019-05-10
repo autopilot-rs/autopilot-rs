@@ -72,23 +72,13 @@ fn system_scale() -> f64 {
     let set_process_dpi_aware_c_str = CString::new("SetProcessDPIAware").unwrap();
     let get_dpi_for_window_c_str = CString::new("GetDpiForWindow").unwrap();
     let user32_module = unsafe { LoadLibraryA(user32_c_str.as_ptr()) };
-    let set_process_dpi_aware_ptr: FARPROC = unsafe {
-        GetProcAddress(
-            user32_module,
-            set_process_dpi_aware_c_str.as_ptr(),
-        )
-    };
-    let get_dpi_for_window_ptr: FARPROC = unsafe {
-        GetProcAddress(
-            user32_module,
-            get_dpi_for_window_c_str.as_ptr(),
-        )
-    };
+    let set_process_dpi_aware_ptr: FARPROC =
+        unsafe { GetProcAddress(user32_module, set_process_dpi_aware_c_str.as_ptr()) };
+    let get_dpi_for_window_ptr: FARPROC =
+        unsafe { GetProcAddress(user32_module, get_dpi_for_window_c_str.as_ptr()) };
 
     // Guard against old Windows versions.
-    if !set_process_dpi_aware_ptr.is_null()
-        && !get_dpi_for_window_ptr.is_null()
-    {
+    if !set_process_dpi_aware_ptr.is_null() && !get_dpi_for_window_ptr.is_null() {
         let set_process_dpi_aware: SetProcessDPIAwareSignature =
             unsafe { std::mem::transmute(set_process_dpi_aware_ptr) };
         let get_dpi_for_window: GetDPIForWindowSignature =
