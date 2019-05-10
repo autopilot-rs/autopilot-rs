@@ -155,7 +155,7 @@ fn system_alert(
         match std::process::Command::new(program)
             .args(&args)
             .spawn()
-            .and_then(|process| process.wait_with_output())
+            .and_then(std::process::Child::wait_with_output)
         {
             Ok(output) => {
                 return output.status.code().and_then({
