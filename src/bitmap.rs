@@ -483,7 +483,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     // Copy entire screen.
     let screen = unsafe {
         guard(GetDC(std::ptr::null_mut()), |s| {
-            ReleaseDC(std::ptr::null_mut(), *s);
+            ReleaseDC(std::ptr::null_mut(), s);
         })
     };
     if screen.is_null() {
@@ -503,7 +503,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
                 0,
             ),
             |d| {
-                DeleteObject(*d as HGDIOBJ);
+                DeleteObject(d as HGDIOBJ);
             },
         )
     };
@@ -511,7 +511,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     // Copy data into bitmap struct.
     let screen_mem = unsafe {
         guard(CreateCompatibleDC(*screen), |s| {
-            DeleteDC(*s);
+            DeleteDC(s);
         })
     };
     unsafe {
