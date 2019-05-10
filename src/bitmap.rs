@@ -641,12 +641,13 @@ mod tests {
     use image::{GenericImage, GenericImageView};
     use image::{DynamicImage, Rgba, RgbaImage};
     use quickcheck::{Arbitrary, Gen, TestResult};
+    use rand::prelude::SliceRandom;
     use rand::{thread_rng, Rng};
 
     impl Arbitrary for Bitmap {
         fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
             let xs = Vec::<u8>::arbitrary(g);
-            let scale: f64 = g.choose(&[1.0, 2.0]).unwrap().clone();
+            let scale: f64 = [1.0, 2.0].choose(g).unwrap().clone();
             let width: f64 = (xs.len() as f64 / 4.0).floor().sqrt();
             let image = RgbaImage::from_raw(width as u32, width as u32, xs).unwrap();
             let dynimage = DynamicImage::ImageRgba8(image);
