@@ -5,10 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.2.0
+
+### Changed
+- Updated image, libc, scopeguard, quickcheck, pkg-config, core-foundation,
+  core-graphics, and cocoa crates to latest versions.
+
 ## 0.1.9
 
 ### Fixed
 - Fixed various warnings from clippy linter.
+
+### Changed
+- Updated image crate to 0.20.
 
 ## 0.1.8
 
