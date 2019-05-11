@@ -63,7 +63,6 @@ fn system_size() -> Size {
 
 #[cfg(windows)]
 fn system_scale() -> f64 {
-    use std;
     use std::ffi::CString;
     use winapi::shared::minwindef::FARPROC;
     use winapi::um::libloaderapi::{GetProcAddress, LoadLibraryA};
