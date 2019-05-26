@@ -187,7 +187,7 @@ fn char_to_key_code(character: char) -> XKeyCode {
         '\n' => XKeyCode::from(x11::keysym::XK_Return),
         _ => unsafe {
             let mut buf = [0; 2];
-            x11::xlib::XStringToKeysym(character.encode_utf8(&mut buf).as_ptr() as *const i8)
+            x11::xlib::XStringToKeysym(character.encode_utf8(&mut buf).as_ptr() as *const u8)
                 as XKeyCode
         },
     }
