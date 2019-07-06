@@ -347,8 +347,8 @@ impl Bitmap {
         &self,
         rect: Option<Rect>,
         start_point: Option<Point>,
-        predicate: &'a Fn(Point) -> bool,
-        matched: &'a mut FnMut(Point) -> (),
+        predicate: &'a dyn Fn(Point) -> bool,
+        matched: &'a mut dyn FnMut(Point) -> (),
     ) {
         let rect = rect.unwrap_or_else(|| self.bounds());
         let mut start_point = start_point.unwrap_or(self.bounds().origin);
