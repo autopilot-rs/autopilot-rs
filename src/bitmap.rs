@@ -553,14 +553,14 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     internal::X_MAIN_DISPLAY.with(|display| {
         let scaled_rect = rect.scaled(screen::scale());
         let root_window = unsafe {
-            guard(x11::xlib::XDefaultRootWindow(*display), |w| {
-                x11::xlib::XDestroyWindow(*display, w);
+            guard(x11::xlib::XDefaultRootWindow(display.as_ptr()), |w| {
+                x11::xlib::XDestroyWindow(display.as_ptr(), w);
             })
         };
         let image_ptr = unsafe {
             guard(
                 x11::xlib::XGetImage(
-                    *display,
+                    display.as_ptr(),
                     *root_window,
                     scaled_rect.origin.x as i32,
                     scaled_rect.origin.y as i32,

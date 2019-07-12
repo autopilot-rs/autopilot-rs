@@ -536,9 +536,14 @@ fn system_toggle<T: KeyCodeConvertible>(
 ) {
     internal::X_MAIN_DISPLAY.with(|display| {
         for &flag in flags.iter() {
-            x_send_key_event(*display, XKeyCode::from(flag), down, modifier_delay_ms);
+            x_send_key_event(
+                display.as_ptr(),
+                XKeyCode::from(flag),
+                down,
+                modifier_delay_ms,
+            );
         }
-        x_send_key_event(*display, key.code(), down, 0);
+        x_send_key_event(display.as_ptr(), key.code(), down, 0);
     })
 }
 

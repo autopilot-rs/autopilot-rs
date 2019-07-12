@@ -95,9 +95,9 @@ fn system_scale() -> f64 {
 fn system_size() -> Size {
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
         let scale_factor = scale();
-        let screen = x11::xlib::XDefaultScreen(*display);
-        let width = f64::from(x11::xlib::XDisplayWidth(*display, screen));
-        let height = f64::from(x11::xlib::XDisplayHeight(*display, screen));
+        let screen = x11::xlib::XDefaultScreen(display.as_ptr());
+        let width = f64::from(x11::xlib::XDisplayWidth(display.as_ptr(), screen));
+        let height = f64::from(x11::xlib::XDisplayHeight(display.as_ptr(), screen));
         Size::new(width, height).scaled(1.0 / scale_factor)
     })
 }

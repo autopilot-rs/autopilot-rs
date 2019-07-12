@@ -9,6 +9,8 @@ use core_graphics::base::CGFloat;
 use core_graphics::geometry::{CGPoint, CGRect, CGSize};
 #[cfg(target_os = "linux")]
 use std;
+#[cfg(target_os = "linux")]
+use std::ptr::NonNull;
 #[cfg(windows)]
 use winapi::shared::windef::POINT;
 #[cfg(target_os = "linux")]
@@ -60,8 +62,12 @@ impl From<Rect> for CGRect {
 }
 
 #[cfg(target_os = "linux")]
-thread_local!(pub static X_MAIN_DISPLAY: *mut x11::xlib::Display = unsafe {
-    x11::xlib::XOpenDisplay(std::ptr::null())
+thread_local!(pub static X_MAIN_DISPLAY: NonNull<x11::xlib::Display> = unsafe {
+    let display = x11::xlib::XOpenDisplay(std::ptr::null());
+    if display.is_null() {
+        panic!("Can't open X display. Is it currently running?");
+    }
+    NonNull::new_unchecked(display)
 });
 
 #[cfg(target_os = "linux")]
@@ -70,15 +76,15 @@ thread_local!(pub static X_SCALE_FACTOR: f64 = {
     use libc;
     // From https://github.com/glfw/glfw/issues/1019#issuecomment-302772498
     X_MAIN_DISPLAY.with(|display| unsafe {
-        let screen = x11::xlib::XDefaultScreen(*display);
-        let width = f64::from(x11::xlib::XDisplayWidth(*display, screen));
-        let width_mm = f64::from(x11::xlib::XDisplayWidthMM(*display, screen));
+        let screen = x11::xlib::XDefaultScreen(display.as_ptr());
+        let width = f64::from(x11::xlib::XDisplayWidth(display.as_ptr(), screen));
+        let width_mm = f64::from(x11::xlib::XDisplayWidthMM(display.as_ptr(), screen));
 
         // Default to display-wide DPI if Xft.dpi is unset.
         let mut dpi = width * 25.4 / width_mm;
 
         // Prefer value set in xrdb.
-        let rms = x11::xlib::XResourceManagerString(*display);
+        let rms = x11::xlib::XResourceManagerString(display.as_ptr());
         if !rms.is_null() {
             let db = x11::xlib::XrmGetStringDatabase(rms);
             if !db.is_null() {

@@ -267,11 +267,11 @@ fn system_move_to(point: Point) {
     use scopeguard::guard;
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
         let scaled_point = point.scaled(screen::scale());
-        let root_window = guard(x11::xlib::XDefaultRootWindow(*display), |w| {
-            x11::xlib::XDestroyWindow(*display, w);
+        let root_window = guard(x11::xlib::XDefaultRootWindow(display.as_ptr()), |w| {
+            x11::xlib::XDestroyWindow(display.as_ptr(), w);
         });
         x11::xlib::XWarpPointer(
-            *display,
+            display.as_ptr(),
             0,
             *root_window,
             0,
@@ -281,14 +281,14 @@ fn system_move_to(point: Point) {
             scaled_point.x as i32,
             scaled_point.y as i32,
         );
-        x11::xlib::XFlush(*display);
+        x11::xlib::XFlush(display.as_ptr());
     });
 }
 
 #[cfg(target_os = "linux")]
 fn system_location() -> Point {
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
-        let root_window = x11::xlib::XDefaultRootWindow(*display);
+        let root_window = x11::xlib::XDefaultRootWindow(display.as_ptr());
         let mut x: i32 = 0;
         let mut y: i32 = 0;
         let mut unused_a: x11::xlib::Window = 0;
@@ -297,7 +297,7 @@ fn system_location() -> Point {
         let mut unused_d: i32 = 0;
         let mut unused_e: u32 = 0;
         x11::xlib::XQueryPointer(
-            *display,
+            display.as_ptr(),
             root_window,
             &mut unused_a,
             &mut unused_b,
@@ -322,7 +322,7 @@ fn send_button_event(display: *mut x11::xlib::Display, button: XButton, down: bo
 #[cfg(target_os = "linux")]
 fn system_toggle(button: Button, down: bool) {
     internal::X_MAIN_DISPLAY.with(|display| {
-        send_button_event(*display, XButton::from(button), down);
+        send_button_event(display.as_ptr(), XButton::from(button), down);
     });
 }
 
@@ -330,8 +330,8 @@ fn system_toggle(button: Button, down: bool) {
 fn system_scroll(direction: ScrollDirection, clicks: u32) {
     internal::X_MAIN_DISPLAY.with(|display| {
         for _ in 0..clicks {
-            send_button_event(*display, XButton::from(direction), true);
-            send_button_event(*display, XButton::from(direction), false);
+            send_button_event(display.as_ptr(), XButton::from(direction), true);
+            send_button_event(display.as_ptr(), XButton::from(direction), false);
         }
     });
 }
