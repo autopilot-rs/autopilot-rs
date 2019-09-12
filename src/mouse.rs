@@ -70,7 +70,7 @@ pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), Mous
                 + start_position.y,
         );
 
-        try!(move_to(position));
+        move_to(position)?;
         std::thread::sleep(std::time::Duration::from_millis(interval));
     }
 

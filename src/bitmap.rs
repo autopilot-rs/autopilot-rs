@@ -373,7 +373,7 @@ impl Bitmap {
         use image::ImageFormat;
 
         let mut buffer: Vec<u8> = Vec::new();
-        try!(self.image.write_to(&mut buffer, ImageFormat::PNG));
+        self.image.write_to(&mut buffer, ImageFormat::PNG)?;
         unsafe {
             let data = NSData::dataWithBytes_length_(
                 nil,

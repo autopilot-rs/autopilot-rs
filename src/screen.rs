@@ -34,10 +34,10 @@ pub fn is_rect_visible(rect: Rect) -> bool {
 /// A convenience method that returns the RGB color at the given point on the
 /// main display.
 pub fn get_color(point: Point) -> ImageResult<Rgba<u8>> {
-    let bmp = try!(bitmap::capture_screen_portion(Rect::new(
+    let bmp = bitmap::capture_screen_portion(Rect::new(
         point,
         Size::new(1.0, 1.0)
-    )));
+    ))?;
     Ok(bmp.image.get_pixel(0, 0))
 }
 
