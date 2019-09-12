@@ -46,6 +46,18 @@ pub enum KeyCode {
     F10,
     F11,
     F12,
+    F13,
+    F14,
+    F15,
+    F16,
+    F17,
+    F18,
+    F19,
+    F20,
+    F21,
+    F22,
+    F23,
+    F24,
     LeftArrow,
     Control,
     RightArrow,
@@ -284,6 +296,15 @@ impl From<KeyCode> for CGKeyCode {
             KeyCode::F10 => event::KeyCode::F10,
             KeyCode::F11 => event::KeyCode::F11,
             KeyCode::F12 => event::KeyCode::F12,
+            KeyCode::F13 => event::KeyCode::F13,
+            KeyCode::F14 => event::KeyCode::F14,
+            KeyCode::F15 => event::KeyCode::F15,
+            KeyCode::F16 => event::KeyCode::F16,
+            KeyCode::F17 => event::KeyCode::F17,
+            KeyCode::F18 => event::KeyCode::F18,
+            KeyCode::F19 => event::KeyCode::F19,
+            KeyCode::F20 => event::KeyCode::F20,
+            KeyCode::F21 | KeyCode::F22 | KeyCode::F23 | KeyCode::F24 => 0,
             KeyCode::LeftArrow => event::KeyCode::LEFT_ARROW,
             KeyCode::Control => event::KeyCode::CONTROL,
             KeyCode::RightArrow => event::KeyCode::RIGHT_ARROW,
@@ -338,11 +359,14 @@ fn system_toggle<T: KeyCodeConvertible>(
         }
     }
 
-    let event = CGEvent::new_keyboard_event(source, key.code(), down).unwrap();
-    let event_type: CGEventType = if down { KeyDown } else { KeyUp };
-    event.set_type(event_type);
-    event.set_flags(cg_event_mask_for_flags(flags));
-    event.post(CGEventTapLocation::HID);
+    let code = key.code();
+    if code != 0 {
+        let event = CGEvent::new_keyboard_event(source, code, down).unwrap();
+        let event_type: CGEventType = if down { KeyDown } else { KeyUp };
+        event.set_type(event_type);
+        event.set_flags(cg_event_mask_for_flags(flags));
+        event.post(CGEventTapLocation::HID);
+    }
 }
 
 #[cfg(windows)]
@@ -380,6 +404,18 @@ impl From<KeyCode> for WinKeyCode {
             KeyCode::F10 => winuser::VK_F10,
             KeyCode::F11 => winuser::VK_F11,
             KeyCode::F12 => winuser::VK_F12,
+            KeyCode::F13 => winuser::VK_F13,
+            KeyCode::F14 => winuser::VK_F14,
+            KeyCode::F15 => winuser::VK_F15,
+            KeyCode::F16 => winuser::VK_F16,
+            KeyCode::F17 => winuser::VK_F17,
+            KeyCode::F18 => winuser::VK_F18,
+            KeyCode::F19 => winuser::VK_F19,
+            KeyCode::F20 => winuser::VK_F20,
+            KeyCode::F21 => winuser::VK_F21,
+            KeyCode::F22 => winuser::VK_F22,
+            KeyCode::F23 => winuser::VK_F23,
+            KeyCode::F24 => winuser::VK_F24,
             KeyCode::LeftArrow => winuser::VK_LEFT,
             KeyCode::Control => winuser::VK_CONTROL,
             KeyCode::RightArrow => winuser::VK_RIGHT,
@@ -483,6 +519,18 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::F10 => x11::keysym::XK_F10,
             KeyCode::F11 => x11::keysym::XK_F11,
             KeyCode::F12 => x11::keysym::XK_F12,
+            KeyCode::F13 => x11::keysym::XK_F13,
+            KeyCode::F14 => x11::keysym::XK_F14,
+            KeyCode::F15 => x11::keysym::XK_F15,
+            KeyCode::F16 => x11::keysym::XK_F16,
+            KeyCode::F17 => x11::keysym::XK_F17,
+            KeyCode::F18 => x11::keysym::XK_F18,
+            KeyCode::F19 => x11::keysym::XK_F19,
+            KeyCode::F20 => x11::keysym::XK_F20,
+            KeyCode::F21 => x11::keysym::XK_F21,
+            KeyCode::F22 => x11::keysym::XK_F22,
+            KeyCode::F23 => x11::keysym::XK_F23,
+            KeyCode::F24 => x11::keysym::XK_F24,
             KeyCode::LeftArrow => x11::keysym::XK_Left,
             KeyCode::Control => x11::keysym::XK_Control_L,
             KeyCode::RightArrow => x11::keysym::XK_Right,
