@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.2.2 - 2019-09-12
+
+### Added
+- Added support for missing function keys.
+
+### Fixed
+- Fixed warnings of using try operator on latest nightly.
+
+### Changed
+- Updated image, libc, rand, quickcheck, pkg-config, and cocoa crates to latest
+  versions.
+
 ## 0.2.1 - 2019-07-12
 
 ### Fixed
