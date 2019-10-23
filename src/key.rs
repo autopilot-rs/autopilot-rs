@@ -120,18 +120,25 @@ pub fn type_string(string: &str, flags: &[Flag], wpm: f64, noise: f64) {
             0
         };
 
-        tap(&Character(c), flags, ms_per_stroke);
+        tap(&Character(c), flags, ms_per_stroke, ms_per_stroke);
         std::thread::sleep(std::time::Duration::from_millis(ms_per_stroke + noise));
     }
 }
 
 /// Convenience wrapper around `toggle()` that holds down and then releases the
 /// given key and modifier flags. Delay between pressing and releasing the key
-/// can be controlled using the `delay_ms` parameter.
-pub fn tap<T: KeyCodeConvertible + Copy>(key: &T, flags: &[Flag], delay_ms: u64) {
-    toggle(key, true, flags, delay_ms);
+/// can be controlled using the `delay_ms` parameter. Delay between pressing and
+/// releasing modifiers can be controlled using the `modifier_delay_ms`
+/// parameter.
+pub fn tap<T: KeyCodeConvertible + Copy>(
+    key: &T,
+    flags: &[Flag],
+    delay_ms: u64,
+    modifier_delay_ms: u64,
+) {
+    toggle(key, true, flags, modifier_delay_ms);
     std::thread::sleep(std::time::Duration::from_millis(delay_ms));
-    toggle(key, false, flags, delay_ms);
+    toggle(key, false, flags, modifier_delay_ms);
 }
 
 /// Holds down the given key or keycode if `down` is `true`, or releases it if
