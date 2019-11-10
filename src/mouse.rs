@@ -357,3 +357,43 @@ extern "C" {
         delay: x11::xlib::Time,
     ) -> i32;
 }
+
+#[cfg(test)]
+mod tests {
+    use geometry::Point;
+    use mouse;
+    use rand::{thread_rng, Rng};
+    use screen;
+
+    #[test]
+    fn test_move_to() {
+        let size = screen::size();
+        let scale = screen::scale();
+        let mut rng = thread_rng();
+        for _ in 0..100 {
+            let x: f64 = rng.gen_range(0.0, size.width - 1.0);
+            let y: f64 = rng.gen_range(0.0, size.height - 1.0);
+            let target = round_pt_nearest_hundredth(Point::new(x, y));
+            mouse::move_to(target).expect("mouse::move_to call failed");
+            std::thread::sleep(std::time::Duration::from_millis(10));
+            let result = mouse::location();
+            assert_eq!(
+                target.scaled(scale).round(),
+                result.scaled(scale).round(),
+                "{} does not map to same pixel as {} for scale {} at size {}",
+                target,
+                result,
+                scale,
+                size
+            );
+        }
+    }
+
+    fn round_nearest_hundredth(x: f64) -> f64 {
+        (x * 100.0).round() / 100.0
+    }
+
+    fn round_pt_nearest_hundredth(pt: Point) -> Point {
+        Point::new(round_nearest_hundredth(pt.x), round_nearest_hundredth(pt.y))
+    }
+}
