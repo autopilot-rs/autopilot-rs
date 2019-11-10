@@ -198,13 +198,11 @@ fn mouse_event_for_button(button: Button, down: bool) -> DWORD {
 
 #[cfg(windows)]
 fn system_move_to(point: Point) {
-    use winapi::um::winuser::{mouse_event, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_MOVE};
-    let screen_size = screen::size().scaled(screen::scale());
-    let scaled_point = point.scaled(screen::scale());
-    let x = scaled_point.x as DWORD * 0xFFFF / screen_size.width as DWORD;
-    let y = scaled_point.y as DWORD * 0xFFFF / screen_size.height as DWORD;
+    use winapi::ctypes::c_int;
+    use winapi::um::winuser::SetCursorPos;
+    let scaled_point = point.scaled(screen::scale()).round();
     unsafe {
-        mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE, x, y, 0, 0);
+        SetCursorPos(scaled_point.x as c_int, scaled_point.y as c_int);
     };
 }
 
@@ -216,7 +214,7 @@ fn system_location() -> Point {
     unsafe {
         GetCursorPos(&mut point);
     }
-    Point::from(point).scaled(screen::scale())
+    Point::from_pixel(f64::from(point.x), f64::from(point.y), screen::scale())
 }
 
 #[cfg(windows)]
@@ -266,7 +264,7 @@ impl From<ScrollDirection> for XButton {
 fn system_move_to(point: Point) {
     use scopeguard::guard;
     internal::X_MAIN_DISPLAY.with(|display| unsafe {
-        let scaled_point = point.scaled(screen::scale());
+        let scaled_point = point.scaled(screen::scale()).round();
         let root_window = guard(x11::xlib::XDefaultRootWindow(display.as_ptr()), |w| {
             x11::xlib::XDestroyWindow(display.as_ptr(), w);
         });
@@ -307,7 +305,7 @@ fn system_location() -> Point {
             &mut unused_d,
             &mut unused_e,
         );
-        Point::new(f64::from(x), f64::from(y)).scaled(screen::scale())
+        Point::from_pixel(f64::from(x), f64::from(y), screen::scale())
     })
 }
 

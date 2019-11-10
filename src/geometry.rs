@@ -54,6 +54,11 @@ impl Point {
     }
 
     #[inline]
+    pub fn from_pixel(x: f64, y: f64, scale: f64) -> Point {
+        Point::new(x / scale, y / scale)
+    }
+
+    #[inline]
     pub fn scaled(&self, multiplier: f64) -> Point {
         Point::new(self.x * multiplier, self.y * multiplier)
     }

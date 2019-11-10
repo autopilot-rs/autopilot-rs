@@ -1,5 +1,3 @@
-#[cfg(windows)]
-use geometry::Point;
 #[cfg(target_os = "macos")]
 use geometry::{Point, Rect, Size};
 
@@ -11,8 +9,6 @@ use core_graphics::geometry::{CGPoint, CGRect, CGSize};
 use std;
 #[cfg(target_os = "linux")]
 use std::ptr::NonNull;
-#[cfg(windows)]
-use winapi::shared::windef::POINT;
 #[cfg(target_os = "linux")]
 use x11;
 
@@ -27,13 +23,6 @@ impl From<Point> for CGPoint {
 impl From<CGPoint> for Point {
     fn from(point: CGPoint) -> Point {
         Point::new(point.x as f64, point.y as f64)
-    }
-}
-
-#[cfg(windows)]
-impl From<POINT> for Point {
-    fn from(point: POINT) -> Point {
-        Point::new(f64::from(point.x), f64::from(point.y))
     }
 }
 
