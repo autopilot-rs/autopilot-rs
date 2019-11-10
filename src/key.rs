@@ -218,12 +218,7 @@ fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
     &[]
 }
 
-#[cfg(windows)]
-fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
-    &[]
-}
-
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "linux", windows))]
 fn flags_for_char<'a>(character: char) -> &'a [Flag] {
     const UPPERCASE_CHARACTERS: &[char] = &[
         '!', '#', '$', '%', '&', '(', ')', '*', '+', ':', '<', '>', '?', '@', '{', '|', '}', '~',
