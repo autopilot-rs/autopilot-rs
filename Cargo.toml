@@ -6,7 +6,7 @@ description = "A simple, cross-platform GUI automation library for Rust."
 homepage = "https://www.autopy.org"
 readme = "README.md"
 repository = "https://github.com/autopilot-rs/autopilot-rs"
-license = "Apache-2.0"
+license = "MIT OR Apache-2.0"
 keywords = ["cross-platform", "gui" ,"automation", "input", "simulation"]
 categories = [
     "api-bindings",
