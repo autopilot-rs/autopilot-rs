@@ -14,6 +14,7 @@
 use geometry::Point;
 use screen;
 use std;
+use std::fmt;
 
 #[cfg(target_os = "macos")]
 use core_graphics::event::{
@@ -50,6 +51,16 @@ pub enum ScrollDirection {
 pub enum MouseError {
     OutOfBounds,
 }
+
+impl fmt::Display for MouseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MouseError::OutOfBounds => write!(f, "Out of bounds"),
+        }
+    }
+}
+
+impl std::error::Error for MouseError {}
 
 /// Gradually moves the mouse to a coordinate in a straight line in the given
 /// time frame (in seconds). If no duration is given a 1 millisecond delay is
