@@ -179,6 +179,7 @@ fn char_to_key_code(character: char) -> XKeyCode {
     match character {
         ' ' => XKeyCode::from(x11::keysym::XK_space),
         '!' => XKeyCode::from(x11::keysym::XK_exclam),
+        '"' => XKeyCode::from(x11::keysym::XK_quotedbl),
         '#' => XKeyCode::from(x11::keysym::XK_numbersign),
         '$' => XKeyCode::from(x11::keysym::XK_dollar),
         '%' => XKeyCode::from(x11::keysym::XK_percent),
@@ -199,8 +200,11 @@ fn char_to_key_code(character: char) -> XKeyCode {
         '?' => XKeyCode::from(x11::keysym::XK_question),
         '@' => XKeyCode::from(x11::keysym::XK_at),
         '[' => XKeyCode::from(x11::keysym::XK_bracketleft),
+        '\'' => XKeyCode::from(x11::keysym::XK_hyphen),
         '\'' => XKeyCode::from(x11::keysym::XK_quotedbl),
         '\\' => XKeyCode::from(x11::keysym::XK_backslash),
+        '\n' => XKeyCode::from(x11::keysym::XK_Return),
+        '\t' => XKeyCode::from(x11::keysym::XK_Tab),
         ']' => XKeyCode::from(x11::keysym::XK_bracketright),
         '^' => XKeyCode::from(x11::keysym::XK_asciicircum),
         '_' => XKeyCode::from(x11::keysym::XK_underscore),
@@ -209,10 +213,6 @@ fn char_to_key_code(character: char) -> XKeyCode {
         '|' => XKeyCode::from(x11::keysym::XK_bar),
         '}' => XKeyCode::from(x11::keysym::XK_braceright),
         '~' => XKeyCode::from(x11::keysym::XK_asciitilde),
-        '\t' => XKeyCode::from(x11::keysym::XK_Tab),
-        '\n' => XKeyCode::from(x11::keysym::XK_Return),
-        '"' => XKeyCode::from(x11::keysym::XK_quotedbl),
-        '\'' => XKeyCode::from(x11::keysym::XK_hyphen),
         _ => unsafe {
             let mut buf = [0; 2];
             x11::xlib::XStringToKeysym(
