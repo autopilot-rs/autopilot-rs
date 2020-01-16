@@ -211,6 +211,8 @@ fn char_to_key_code(character: char) -> XKeyCode {
         '~' => XKeyCode::from(x11::keysym::XK_asciitilde),
         '\t' => XKeyCode::from(x11::keysym::XK_Tab),
         '\n' => XKeyCode::from(x11::keysym::XK_Return),
+        '"' => XKeyCode::from(x11::keysym::XK_quotedbl),
+        '\'' => XKeyCode::from(x11::keysym::XK_hyphen),
         _ => unsafe {
             let mut buf = [0; 2];
             x11::xlib::XStringToKeysym(
@@ -234,7 +236,7 @@ fn flags_for_char<'a>(_character: char) -> &'a [Flag] {
 fn flags_for_char<'a>(character: char) -> &'a [Flag] {
     const UPPERCASE_CHARACTERS: &[char] = &[
         '!', '#', '$', '%', '&', '(', ')', '*', '+', ':', '<', '>', '?', '@', '{', '|', '}', '~',
-        '_', '^',
+        '_', '^', '"',
     ];
     if character.is_uppercase() || UPPERCASE_CHARACTERS.contains(&character) {
         &[Flag::Shift]
