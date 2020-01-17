@@ -40,7 +40,8 @@ fn sine_mouse_wave() {
 }
 ```
 
-This will enter the keys from the string "Hello, world!" and then prompt an alert with the same text:
+This will enter the keys from the string "Hello, world!" and then prompt an
+alert with the same text:
 
 ```rust
 extern crate autopilot;
@@ -50,6 +51,16 @@ fn main() {
     let _ = autopilot::alert::alert("Hello, world!", None, None, None);
 }
 ```
+
+## Contributing
+
+If you are interested in this project, please consider contributing. Here are a
+few ways you can help:
+
+- [Report issues](https://github.com/autopilot-rs/autopilot-rs/issues).
+- Fix bugs and [submit pull requests](https://github.com/autopilot-rs/autopilot-rs/pulls).
+- Write, clarify, or fix documentation.
+- Suggest or add new features.
 
 ## License
 
