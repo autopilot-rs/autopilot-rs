@@ -511,7 +511,7 @@ impl From<Flag> for XKeyCode {
             Flag::Shift => x11::keysym::XK_Shift_L,
             Flag::Control => x11::keysym::XK_Control_L,
             Flag::Alt => x11::keysym::XK_Alt_L,
-            Flag::Meta => x11::keysym::XK_Meta_L,
+            Flag::Meta => x11::keysym::XK_Super_L,
             Flag::Help => x11::keysym::XK_Help,
         };
         XKeyCode::from(x_code)
@@ -560,7 +560,7 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::Home => x11::keysym::XK_Home,
             KeyCode::Escape => x11::keysym::XK_Escape,
             KeyCode::Backspace => x11::keysym::XK_Delete,
-            KeyCode::Meta => x11::keysym::XK_Meta_L,
+            KeyCode::Meta => x11::keysym::XK_Super_L,
             KeyCode::CapsLock => x11::keysym::XK_Caps_Lock,
             KeyCode::Shift => x11::keysym::XK_Shift_L,
             KeyCode::Tab => x11::keysym::XK_Tab,
