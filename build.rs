@@ -1,12 +1,8 @@
 extern crate pkg_config;
 
-#[cfg(target_os = "macos")]
-fn main() {}
-
-#[cfg(target_os = "windows")]
-fn main() {}
-
-#[cfg(target_os = "linux")]
 fn main() {
-    println!("cargo:rustc-flags=-l X11 -l Xtst");
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap();
+    if target_os == "linux" {
+        println!("cargo:rustc-flags=-l X11 -l Xtst");
+    }
 }
