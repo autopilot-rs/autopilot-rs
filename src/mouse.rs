@@ -96,9 +96,10 @@ pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), Mous
     Ok(())
 }
 
-// moves mouse cursor to destination with constant speed (in pixels per second) [default: 1000]
-// todo: think of better name for it
-pub fn smooth_move2(destination: Point, speed: Option<f64>) -> Result<(), MouseError> {
+// Moves mouse cursor to destination with constant speed (in pixels per second) [default: 1000]
+///
+/// Returns `MouseError` if coordinate is outside the screen boundaries.
+pub fn smooth_move_with_speed(destination: Point, speed: Option<f64>) -> Result<(), MouseError> {
     if !screen::is_point_visible(destination) {
         return Err(MouseError::OutOfBounds);
     }
