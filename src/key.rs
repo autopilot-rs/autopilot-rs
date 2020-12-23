@@ -316,6 +316,7 @@ impl From<Flag> for CGEventFlags {
     }
 }
 
+/// Mapped to Apple Magic Keyboard
 #[cfg(target_os = "macos")]
 impl From<KeyCode> for CGKeyCode {
     fn from(code: KeyCode) -> CGKeyCode {
@@ -360,6 +361,11 @@ impl From<KeyCode> for CGKeyCode {
             KeyCode::Shift => event::KeyCode::SHIFT,
             KeyCode::Tab => event::KeyCode::TAB,
             KeyCode::Space => event::KeyCode::SPACE,
+            KeyCode::PrintScreen => event::KeyCode::F13,
+            KeyCode::ScrollLock => event::KeyCode::F14,
+            KeyCode::Pause => event::KeyCode::F15,
+            KeyCode::Num_0 => event::KeyCode::,
+            
         }
     }
 }
@@ -463,6 +469,7 @@ impl From<KeyCode> for WinKeyCode {
             KeyCode::Return => winuser::VK_RETURN,
             KeyCode::PageDown => winuser::VK_NEXT,
             KeyCode::Delete => winuser::VK_DELETE,
+            KeyCode::Insert => winuser::VK_INSERT,
             KeyCode::Home => winuser::VK_HOME,
             KeyCode::Escape => winuser::VK_ESCAPE,
             KeyCode::Backspace => winuser::VK_BACK,
@@ -471,6 +478,26 @@ impl From<KeyCode> for WinKeyCode {
             KeyCode::Shift => winuser::VK_SHIFT,
             KeyCode::Tab => winuser::VK_TAB,
             KeyCode::Space => winuser::VK_SPACE,
+            KeyCode::PrintScreen => winuser::VK_SNAPSHOT,
+            KeyCode::ScrollLock => winuser::VK_SCROLL,
+            KeyCode::Pause => winuser::VK_PAUSE,
+            KeyCode::Num_0 => winuser::VK_NUMPAD0,
+            KeyCode::Num_1 => winuser::VK_NUMPAD1,
+            KeyCode::Num_2 => winuser::VK_NUMPAD2,
+            KeyCode::Num_3 => winuser::VK_NUMPAD3,
+            KeyCode::Num_4 => winuser::VK_NUMPAD4,
+            KeyCode::Num_5 => winuser::VK_NUMPAD5,
+            KeyCode::Num_6 => winuser::VK_NUMPAD6,
+            KeyCode::Num_7 => winuser::VK_NUMPAD7,
+            KeyCode::Num_8 => winuser::VK_NUMPAD8,
+            KeyCode::Num_9 => winuser::VK_NUMPAD9,
+            KeyCode::Num_Decimal => winuser::VK_DECIMAL,
+            KeyCode::Num_Lock => winuser::VK_NUMLOCK,
+            KeyCode::Num_Divide => winuser::VK_DIVIDE,
+            KeyCode::Num_Multiply => winuser::VK_MULTIPLY,
+            KeyCode::Num_Subtract => winuser::VK_SUBTRACT,
+            KeyCode::Num_Add => winuser::VK_ADD,
+            KeyCode::Num_Enter => winuser::VK_RETURN,
         };
         win_code as WinKeyCode
     }
