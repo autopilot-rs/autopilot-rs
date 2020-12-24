@@ -374,7 +374,7 @@ impl From<KeyCode> for CGKeyCode {
             KeyCode::Num_7 => 0x1A,
             KeyCode::Num_8 => 0x1C,
             KeyCode::Num_9 => 0x19,
-            KeyCode::Num_Decimal => 0x41
+            KeyCode::Num_Decimal => 0x41,
             KeyCode::Num_Lock => 0x47,
             KeyCode::Num_Divide => 0x4B,
             KeyCode::Num_Multiply => 0x43,
