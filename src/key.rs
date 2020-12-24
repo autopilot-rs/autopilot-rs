@@ -316,7 +316,7 @@ impl From<Flag> for CGEventFlags {
     }
 }
 
-/// Mapped to Apple Magic Keyboard
+/// Mapped to Apple Magic Keyboard, numpad keys may not work with non-English layouts
 #[cfg(target_os = "macos")]
 impl From<KeyCode> for CGKeyCode {
     fn from(code: KeyCode) -> CGKeyCode {
@@ -364,8 +364,23 @@ impl From<KeyCode> for CGKeyCode {
             KeyCode::PrintScreen => event::KeyCode::F13,
             KeyCode::ScrollLock => event::KeyCode::F14,
             KeyCode::Pause => event::KeyCode::F15,
-            KeyCode::Num_0 => event::KeyCode::,
-            
+            KeyCode::Num_0 => 0x1D,
+            KeyCode::Num_1 => 0x12,
+            KeyCode::Num_2 => 0x13,
+            KeyCode::Num_3 => 0x14,
+            KeyCode::Num_4 => 0x15,
+            KeyCode::Num_5 => 0x17,
+            KeyCode::Num_6 => 0x16,
+            KeyCode::Num_7 => 0x1A,
+            KeyCode::Num_8 => 0x1C,
+            KeyCode::Num_9 => 0x19,
+            KeyCode::Num_Decimal => 0x41
+            KeyCode::Num_Lock => 0x47,
+            KeyCode::Num_Divide => 0x4B,
+            KeyCode::Num_Multiply => 0x43,
+            KeyCode::Num_Subtract => 0x4E,
+            KeyCode::Num_Add => 0x45,
+            KeyCode::Num_Enter => 0x4C,
         }
     }
 }
