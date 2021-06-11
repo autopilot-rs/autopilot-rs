@@ -620,7 +620,7 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::Return => x11::keysym::XK_Return,
             KeyCode::PageDown => x11::keysym::XK_Page_Down,
             KeyCode::Delete => x11::keysym::XK_Delete,
-            KeyCode::Insert => x11::keysym::XK_XK_Insert,
+            KeyCode::Insert => x11::keysym::XK_Insert,
             KeyCode::Home => x11::keysym::XK_Home,
             KeyCode::Escape => x11::keysym::XK_Escape,
             KeyCode::Backspace => x11::keysym::XK_Delete,
