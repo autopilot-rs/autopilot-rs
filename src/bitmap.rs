@@ -355,7 +355,7 @@ impl Bitmap {
         rect: Option<Rect>,
         start_point: Option<Point>,
         predicate: &'a dyn Fn(Point) -> bool,
-        matched: &'a mut dyn FnMut(Point) -> (),
+        matched: &'a mut dyn FnMut(Point),
     ) {
         let rect = rect.unwrap_or_else(|| self.bounds());
         let mut start_point = start_point.unwrap_or(self.bounds().origin);
@@ -414,7 +414,7 @@ impl Bitmap {
 #[inline]
 fn colors_match(c1: Rgba<u8>, c2: Rgba<u8>, tolerance: f64) -> bool {
     assert!(
-        tolerance >= 0.0 && tolerance <= 1.0,
+        (0.0..=1.0).contains(&tolerance),
         "Tolerance must be between 0 and 1."
     );
     if tolerance == 0.0 {
