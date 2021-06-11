@@ -76,6 +76,8 @@ pub enum KeyCode {
     Return,
     PageDown,
     Delete,
+    // Insert doesn't exist on macOS
+    #[cfg(not(target_os = "macos"))]
     Insert,
     Home,
     Escape,
