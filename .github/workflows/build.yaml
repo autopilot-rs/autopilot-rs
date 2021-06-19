@@ -1,0 +1,47 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: ["stable", "beta", "nightly"]
+        os: ["windows-latest", "ubuntu-latest", "macos-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Set Up Cache
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+          ~/.rustup/toolchains
+          ~/.rustup/update-hashes
+          ~/.rustup/settings.toml
+        key: ${{ runner.os }}-rust-${{ matrix.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+    - name: Set Up Toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.toolchain }}
+        components: rustfmt, clippy
+    - name: Install system dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install -y libxtst-dev xvfb
+    - name: Build
+      run: cargo build --verbose --all
+    - name: Lint
+      run: cargo clippy -- -D warnings
+    - name: XVFB Test
+      if: matrix.os == 'ubuntu-latest'
+      run: xvfb-run --auto-servernum cargo test --verbose
+    - name: Desktop Test
+      if: matrix.os != 'ubuntu-latest'
+      run: cargo test --verbose
