@@ -246,13 +246,13 @@ fn system_toggle(button: Button, down: bool) {
 #[cfg(windows)]
 fn system_scroll(direction: ScrollDirection, clicks: u32) {
     use winapi::um::winuser::{mouse_event, MOUSEEVENTF_WHEEL, WHEEL_DELTA};
+    let distance: DWORD = WHEEL_DELTA as DWORD * clicks as DWORD;
+    let units: DWORD = if direction == ScrollDirection::Up {
+        distance
+    } else {
+        std::u32::MAX - (distance - 1)
+    };
     unsafe {
-        let distance: DWORD = WHEEL_DELTA as DWORD * clicks as DWORD;
-        let units: DWORD = if direction == ScrollDirection::Up {
-            distance
-        } else {
-            std::u32::MAX - (distance - 1)
-        };
         mouse_event(MOUSEEVENTF_WHEEL, 0, 0, units, 0);
     };
 }
