@@ -623,7 +623,7 @@ impl From<KeyCode> for XKeyCode {
             KeyCode::Insert => x11::keysym::XK_XK_Insert,
             KeyCode::Home => x11::keysym::XK_Home,
             KeyCode::Escape => x11::keysym::XK_Escape,
-            KeyCode::Backspace => x11::keysym::XK_Delete,
+            KeyCode::Backspace => x11::keysym::XK_BackSpace,
             KeyCode::Meta => x11::keysym::XK_Meta_L,
             KeyCode::CapsLock => x11::keysym::XK_Caps_Lock,
             KeyCode::Shift => x11::keysym::XK_Shift_L,
