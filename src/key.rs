@@ -20,6 +20,7 @@ use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 use internal;
 #[cfg(target_os = "linux")]
 use libc;
+use winapi::um::winuser::KEYBDINPUT;
 #[cfg(target_os = "linux")]
 use x11;
 
@@ -536,8 +537,10 @@ fn system_toggle<T: KeyCodeConvertible>(
     modifier_delay_ms: u64,
 ) {
     use winapi::um::winuser::{
-        SendInput, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
+        SendInput, INPUT, INPUT_u, INPUT_KEYBOARD, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
     };
+    use std::mem::size_of;
+
     for &flag in flags.iter() {
         win_send_key_event(WinKeyCode::from(flag), down, modifier_delay_ms);
     }
@@ -548,13 +551,16 @@ fn system_toggle<T: KeyCodeConvertible>(
             let mut input = INPUT {
                 type_: INPUT_KEYBOARD,
                 u: unsafe {
-                    std::mem::transmute_copy(&KEYBDINPUT {
-                        wVk: 0,
-                        wScan: *word,
-                        dwFlags: KEYEVENTF_UNICODE | flags,
-                        time: 0,
-                        dwExtraInfo: 0,
-                    })
+                    std::mem::transmute_copy(&(
+                        KEYBDINPUT {
+                            wVk: 0,
+                            wScan: *word,
+                            dwFlags: KEYEVENTF_UNICODE | flags,
+                            time: 0,
+                            dwExtraInfo: 0,
+                        },
+                        [0; size_of::<INPUT_u>() - size_of::<KEYBDINPUT>()],
+                    ))
                 },
             };
             unsafe {
