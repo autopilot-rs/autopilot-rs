@@ -20,7 +20,6 @@ use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 use internal;
 #[cfg(target_os = "linux")]
 use libc;
-use winapi::um::winuser::KEYBDINPUT;
 #[cfg(target_os = "linux")]
 use x11;
 
@@ -537,7 +536,7 @@ fn system_toggle<T: KeyCodeConvertible>(
     modifier_delay_ms: u64,
 ) {
     use winapi::um::winuser::{
-        SendInput, INPUT, INPUT_u, INPUT_KEYBOARD, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
+        SendInput, INPUT, INPUT_u, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE,
     };
     use std::mem::size_of;
 
