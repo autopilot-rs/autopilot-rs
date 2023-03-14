@@ -11,7 +11,7 @@ fn find_bitmap() {
         let needle_path = asset_path().join(format!("needle{}.png", idx + 1));
         let needle = Bitmap::new(image::open(needle_path).unwrap(), None);
         let pt = haystack.find_bitmap(&needle, None, None, None);
-        assert_eq!(pt.is_some(), true);
+        assert!(pt.is_some());
     }
 }
 

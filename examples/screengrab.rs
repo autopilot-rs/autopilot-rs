@@ -21,10 +21,10 @@ fn main() {
         .parent()
         .unwrap()
         .join("screenshot_cropped.png");
-    let _ = bmp.image
+    bmp.image
         .save(&bmp_path)
         .expect("Unable to save screenshot");
-    let _ = portion
+    portion
         .image
         .save(&portion_path)
         .expect("Unable to save cropped screenshot");

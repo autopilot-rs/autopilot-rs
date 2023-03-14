@@ -28,7 +28,7 @@ impl From<Point> for CGPoint {
 #[cfg(target_os = "macos")]
 impl From<CGPoint> for Point {
     fn from(point: CGPoint) -> Point {
-        Point::new(point.x as f64, point.y as f64)
+        Point::new(point.x, point.y)
     }
 }
 
@@ -42,7 +42,7 @@ impl From<Size> for CGSize {
 #[cfg(target_os = "macos")]
 impl From<CGSize> for Size {
     fn from(size: CGSize) -> Size {
-        Size::new(size.width as f64, size.height as f64)
+        Size::new(size.width, size.height)
     }
 }
 

@@ -160,7 +160,7 @@ fn system_alert(
     let message_programs = ["gmessage", "gxmessage", "kmessage", "xmessage"];
     for program in &message_programs {
         match std::process::Command::new(program)
-            .args(&args)
+            .args(args)
             .spawn()
             .and_then(std::process::Child::wait_with_output)
         {

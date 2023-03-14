@@ -10,7 +10,7 @@ fn sine_mouse_wave() -> Result<(), autopilot::mouse::MouseError> {
         let y = (scoped_height * ((TWO_PI * x as f64) / screen_size.width).sin() + scoped_height)
             .round();
         let duration: u64 = rand::thread_rng().gen_range(1, 3);
-        autopilot::mouse::move_to(autopilot::geometry::Point::new(x as f64, y as f64))?;
+        autopilot::mouse::move_to(autopilot::geometry::Point::new(x as f64, y))?;
         std::thread::sleep(std::time::Duration::from_millis(duration));
     }
     Ok(())

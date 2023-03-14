@@ -545,8 +545,7 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     let mut img = DynamicImage::new_rgb8(rect.size.width as u32, rect.size.height as u32);
     for x in 0..rect.size.width as usize {
         for y in 0..rect.size.height as usize {
-            let offset: usize =
-                bytewidth as usize * y as usize + bytes_per_pixel as usize * x as usize;
+            let offset: usize = bytewidth * y + bytes_per_pixel * x;
             let (b, g, r) = (buffer[offset], buffer[offset + 1], buffer[offset + 2]);
             img.put_pixel(x as u32, y as u32, Rgba([r, g, b, 255]));
         }
@@ -631,7 +630,7 @@ fn macos_load_cgimage(image: &CGImage) -> ImageResult<Bitmap> {
         size: CGSize::new(width as CGFloat, height as CGFloat),
     };
 
-    context.draw_image(rect, &image);
+    context.draw_image(rect, image);
 
     let buffer: &[u8] = context.data();
     let mut dynimage = DynamicImage::new_rgb8(width as u32, height as u32);
@@ -659,11 +658,11 @@ mod tests {
     impl Arbitrary for Bitmap {
         fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
             let xs = Vec::<u8>::arbitrary(g);
-            let scale: f64 = [1.0, 2.0].choose(g).unwrap().clone();
+            let scale: f64 = *[1.0, 2.0].choose(g).unwrap();
             let width: f64 = (xs.len() as f64 / 4.0).floor().sqrt();
             let image = RgbaImage::from_raw(width as u32, width as u32, xs).unwrap();
             let dynimage = DynamicImage::ImageRgba8(image);
-            return Bitmap::new(dynimage, Some(scale));
+            Bitmap::new(dynimage, Some(scale))
         }
     }
 
@@ -715,9 +714,9 @@ mod tests {
             )).unwrap();
             let pt_a = haystack.find_bitmap(&needle, None, None, None);
             let pt_b = haystack.find_bitmap(&needle, None, None, Some(offset_pt));
-            return TestResult::from_bool(pt_a.is_some() &&
+            TestResult::from_bool(pt_a.is_some() &&
                                          pt_b.is_some() &&
-                                         pt_b.unwrap() == offset_pt);
+                                         pt_b.unwrap() == offset_pt)
         }
     }
 
@@ -731,7 +730,7 @@ mod tests {
             inverted.invert();
             let needle = Bitmap::new(inverted, None);
             let pt = haystack.find_bitmap(&needle, None, None, None);
-            return TestResult::from_bool(pt.is_none());
+            TestResult::from_bool(pt.is_none())
         }
     }
 
@@ -741,23 +740,23 @@ mod tests {
                 return TestResult::discard();
             }
             let mut haystack_img = DynamicImage::new_rgba8(
-                tile.image.width() as u32 * 2 as u32 + 1,
-                tile.image.height() as u32 * 2 as u32 + 1
+                tile.image.width() * 2_u32 + 1,
+                tile.image.height() * 2_u32 + 1
             );
-            for x in 0..tile.image.width() as u32 * 2 as u32 {
-                for y in 0..tile.image.height() as u32 * 2 as u32 {
-                    let tile_x = x % tile.image.width() as u32;
-                    let tile_y = y % tile.image.height() as u32;
+            for x in 0..tile.image.width() * 2_u32 {
+                for y in 0..tile.image.height() * 2_u32 {
+                    let tile_x = x % tile.image.width();
+                    let tile_y = y % tile.image.height();
                     haystack_img.put_pixel(
-                        x as u32,
-                        y as u32,
+                        x,
+                        y,
                         tile.image.get_pixel(tile_x, tile_y)
                     );
                 }
             }
 
             let haystack = Bitmap::new(haystack_img, Some(tile.scale));
-            return TestResult::from_bool(haystack.count_of_bitmap(&tile, None, None, None) >= 4);
+            TestResult::from_bool(haystack.count_of_bitmap(&tile, None, None, None) >= 4)
         }
     }
 }
