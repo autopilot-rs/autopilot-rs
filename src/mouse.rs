@@ -15,6 +15,7 @@ use geometry::Point;
 use screen;
 use std;
 use std::fmt;
+use std::time::Instant;
 
 #[cfg(target_os = "macos")]
 use core_graphics::event::{
@@ -90,6 +91,41 @@ pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), Mous
 
         move_to(position)?;
         std::thread::sleep(std::time::Duration::from_millis(interval));
+    }
+
+    Ok(())
+}
+
+// Moves mouse cursor to destination with constant speed (in pixels per second) [default: 1000]
+///
+/// Returns `MouseError` if coordinate is outside the screen boundaries.
+pub fn smooth_move_with_speed(destination: Point, speed: Option<f64>) -> Result<(), MouseError> {
+    if !screen::is_point_visible(destination) {
+        return Err(MouseError::OutOfBounds);
+    }
+
+    let start_position = location();
+
+    let dx = destination.x - start_position.x;
+    let dy = destination.y - start_position.y;
+    let distance = dx * dx + dy * dy;
+    let mult = speed.map_or(1.0, |speed| speed / 1000.0) / distance.sqrt();
+
+    // direction vector multiplied on speed
+    let vec_x = dx * mult;
+    let vec_y = dy * mult;
+
+    let time = Instant::now();
+    loop {
+        let delta = time.elapsed().as_millis() as f64;
+
+        let position = Point::new(start_position.x + vec_x * delta, start_position.y + vec_y * delta);
+        // checks if cursor is close enough to destination, so we can just move it in
+        if (position.x - start_position.x).powi(2) + (position.y - start_position.y).powi(2) >= distance {
+            move_to(destination)?;
+            break;
+        }
+        move_to(position)?;
     }
 
     Ok(())
