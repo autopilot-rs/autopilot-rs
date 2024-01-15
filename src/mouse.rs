@@ -68,6 +68,7 @@ impl std::error::Error for MouseError {}
 ///
 /// Returns `MouseError` if coordinate is outside the screen boundaries.
 pub fn smooth_move(destination: Point, duration: Option<f64>) -> Result<(), MouseError> {
+    #[cfg(not(target_os = "macos"))]
     if !screen::is_point_visible(destination) {
         return Err(MouseError::OutOfBounds);
     }
@@ -108,6 +109,7 @@ pub fn click(button: Button, delay_ms: Option<u64>) {
 /// Immediately moves the mouse to the given coordinate.
 ///
 /// Returns `MouseError` if coordinate is outside the screen boundaries.
+#[cfg(not(target_os = "macos"))]
 pub fn move_to(point: Point) -> Result<(), MouseError> {
     if !screen::is_point_visible(point) {
         Err(MouseError::OutOfBounds)
@@ -115,6 +117,12 @@ pub fn move_to(point: Point) -> Result<(), MouseError> {
         system_move_to(point);
         Ok(())
     }
+}
+// On MacOS disable the bounds check
+#[cfg(target_os = "macos")]
+pub fn move_to(point: Point) -> Result<(), MouseError> {
+    system_move_to(point);
+    Ok(())        
 }
 
 /// Returns the current position of the mouse cursor.
