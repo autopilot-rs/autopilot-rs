@@ -15,6 +15,7 @@ use geometry::Point;
 use screen;
 use std;
 use std::fmt;
+use std::sync::RwLock;
 
 #[cfg(target_os = "macos")]
 use core_graphics::event::{
@@ -28,7 +29,7 @@ use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 use core_graphics::geometry::CGPoint;
 
 #[cfg(target_os = "macos")]
-static mut mac_down_buttons: u16 = 0;
+static mac_down_buttons: RwLock<u16> = RwLock::new(0);
 
 #[cfg(windows)]
 use winapi::shared::minwindef::DWORD;
@@ -185,10 +186,7 @@ fn system_move_to(point: Point) {
         };
     }
 
-    let button_bits: u16;
-    unsafe {
-        button_bits = mac_down_buttons;
-    }
+    let button_bits: u16 = *mac_down_buttons.read().unwrap();
 
     if button_bits & u16::from(Button::Left) != 0 {
         send!(CGEventType::LeftMouseDragged, CGMouseButton::Left);
@@ -220,13 +218,12 @@ fn system_toggle(button: Button, down: bool) {
     let event = CGEvent::new_mouse_event(source, event_type, point, CGMouseButton::from(button));
     event.unwrap().post(CGEventTapLocation::HID);
 
-    unsafe {
-        let mask: u16 = button.into();
-        if down {
-            mac_down_buttons |= mask;
-        } else {
-            mac_down_buttons &= !mask;
-        }
+    let mut p_write = mac_down_buttons.write().unwrap();
+    let mask: u16 = button.into();
+    if down {
+        *p_write |= mask;
+    } else {
+        *p_write &= !mask;
     }
 }
 
