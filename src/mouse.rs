@@ -26,6 +26,10 @@ use core_graphics::event_source::CGEventSource;
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::CGPoint;
+
+#[cfg(target_os = "macos")]
+static mut mac_down_buttons: u16 = 0;
+
 #[cfg(windows)]
 use winapi::shared::minwindef::DWORD;
 
@@ -39,6 +43,16 @@ pub enum Button {
     Left,
     Middle,
     Right,
+}
+
+impl From<Button> for u16 {
+    fn from(button: Button) -> u16 {
+        match button {
+            Button::Left => 0x1,
+            Button::Middle => 0x2,
+            Button::Right => 0x4,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -162,10 +176,33 @@ impl From<Button> for CGMouseButton {
 #[cfg(target_os = "macos")]
 fn system_move_to(point: Point) {
     let point = CGPoint::from(point);
-    let source = CGEventSource::new(HIDSystemState).unwrap();
-    let event =
-        CGEvent::new_mouse_event(source, CGEventType::MouseMoved, point, CGMouseButton::Left);
-    event.unwrap().post(CGEventTapLocation::HID);
+
+    macro_rules! send {
+        ($event_type:expr, $btn:expr) => {
+            let source = CGEventSource::new(HIDSystemState).unwrap();
+            let event = CGEvent::new_mouse_event(source, $event_type, point.clone(), $btn);
+            event.unwrap().post(CGEventTapLocation::HID);
+        };
+    }
+
+    let button_bits: u16;
+    unsafe {
+        button_bits = mac_down_buttons;
+    }
+
+    if button_bits & u16::from(Button::Left) != 0 {
+        send!(CGEventType::LeftMouseDragged, CGMouseButton::Left);
+    }
+    if button_bits & u16::from(Button::Right) != 0 {
+        send!(CGEventType::RightMouseDragged, CGMouseButton::Right);
+    }
+    if button_bits & u16::from(Button::Middle) != 0 {
+        send!(CGEventType::OtherMouseDragged, CGMouseButton::Center);
+    }
+    if button_bits == 0 {
+        send!(CGEventType::MouseMoved, CGMouseButton::Left);
+    }
+    
 }
 
 #[cfg(target_os = "macos")]
@@ -182,6 +219,15 @@ fn system_toggle(button: Button, down: bool) {
     let event_type = button.event_type(down);
     let event = CGEvent::new_mouse_event(source, event_type, point, CGMouseButton::from(button));
     event.unwrap().post(CGEventTapLocation::HID);
+
+    unsafe {
+        let mask: u16 = button.into();
+        if down {
+            mac_down_buttons |= mask;
+        } else {
+            mac_down_buttons &= !mask;
+        }
+    }
 }
 
 #[cfg(target_os = "macos")]
