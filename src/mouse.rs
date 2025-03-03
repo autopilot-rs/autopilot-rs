@@ -247,7 +247,7 @@ fn system_scroll(direction: ScrollDirection, clicks: u32) {
     let units: DWORD = if direction == ScrollDirection::Up {
         distance
     } else {
-        std::u32::MAX - (distance - 1)
+        u32::MAX - (distance - 1)
     };
     unsafe {
         mouse_event(MOUSEEVENTF_WHEEL, 0, 0, units, 0);
