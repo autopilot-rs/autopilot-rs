@@ -15,8 +15,6 @@ use geometry::{Point, Rect, Size};
 use core_graphics::display::CGDisplay;
 #[cfg(target_os = "linux")]
 use internal;
-#[cfg(target_os = "linux")]
-use x11;
 
 /// Returns the size of the main screen in points.
 pub fn size() -> Size {

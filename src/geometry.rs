@@ -4,7 +4,6 @@
 // https://apache.org/licenses/LICENSE-2.0> or the MIT License <LICENSE-MIT or
 // https://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
-use std;
 use std::fmt;
 
 #[derive(Copy, Clone, Debug)]

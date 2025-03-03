@@ -18,13 +18,8 @@ use core_graphics::event_source::CGEventSource;
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "linux")]
 use internal;
-#[cfg(target_os = "linux")]
-use libc;
-#[cfg(target_os = "linux")]
-use x11;
 
 use self::rand::Rng;
-use std;
 
 /// Device-independent modifier flags.
 #[derive(Copy, Clone, Debug, PartialEq)]

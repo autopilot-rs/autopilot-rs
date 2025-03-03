@@ -13,7 +13,6 @@
 
 use geometry::Point;
 use screen;
-use std;
 use std::fmt;
 
 #[cfg(target_os = "macos")]
@@ -31,8 +30,6 @@ use winapi::shared::minwindef::DWORD;
 
 #[cfg(target_os = "linux")]
 use internal;
-#[cfg(target_os = "linux")]
-use x11;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Button {

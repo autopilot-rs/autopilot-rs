@@ -15,8 +15,6 @@ use core_foundation::string::{CFString, CFStringRef};
 #[cfg(target_os = "macos")]
 use core_foundation::url::CFURLRef;
 
-use std;
-
 #[derive(Copy, Clone, Debug)]
 pub enum Response {
     Default,

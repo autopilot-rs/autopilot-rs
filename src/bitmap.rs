@@ -14,7 +14,6 @@ extern crate image;
 use geometry::{Point, Rect, Size};
 use image::{DynamicImage, GenericImage, GenericImageView, ImageError, ImageResult, Pixel, Rgba};
 use screen;
-use std;
 
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::CGRect;
@@ -27,8 +26,6 @@ use libc;
 use internal;
 #[cfg(not(target_os = "macos"))]
 use scopeguard::guard;
-#[cfg(target_os = "linux")]
-use x11;
 
 #[derive(Clone)]
 pub struct Bitmap {
