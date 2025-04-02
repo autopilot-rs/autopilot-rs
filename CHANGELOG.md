@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.1 - 2025-01-01
+
+### Fixed
+
+- Fixed legacy numeric constant for maximum u32 value.
+  [@pegovam](https://github.com/pevogam)
+
+- Dropped redundant imports (and thus warnings about them).
+  [@pevogam](https://github.com/pevogam)
+
 ## 0.4.0 - 2020-01-16
 
 ### Added
