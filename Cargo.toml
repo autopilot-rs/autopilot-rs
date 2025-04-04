@@ -7,13 +7,13 @@ homepage = "https://www.autopy.org"
 readme = "README.md"
 repository = "https://github.com/autopilot-rs/autopilot-rs"
 license = "MIT OR Apache-2.0"
-keywords = ["cross-platform", "gui" ,"automation", "input", "simulation"]
+keywords = ["cross-platform", "gui", "automation", "input", "simulation"]
 categories = [
     "api-bindings",
     "gui",
     "os::macos-apis",
     "os::unix-apis",
-    "os::windows-apis"
+    "os::windows-apis",
 ]
 
 [dependencies]
@@ -25,8 +25,8 @@ scopeguard = "1.1"
 [dev-dependencies]
 quickcheck = "0.9"
 
-[build-dependencies]
-pkg-config = "0.3"
+[target.'cfg(target_os = "linux")'.build-dependencies]
+pkg-config = "0.3.32"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.7.0"
@@ -37,4 +37,9 @@ cocoa = "0.20.0"
 x11 = "2.18.1"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.4", features = ["libloaderapi", "minwindef", "winbase", "winuser"] }
+winapi = { version = "0.3.4", features = [
+    "libloaderapi",
+    "minwindef",
+    "winbase",
+    "winuser",
+] }
