@@ -13,6 +13,7 @@ extern crate image;
 
 use geometry::{Point, Rect, Size};
 use image::{DynamicImage, GenericImage, GenericImageView, ImageError, ImageResult, Pixel, Rgba};
+use image::error::{LimitError, LimitErrorKind};
 use screen;
 
 #[cfg(target_os = "macos")]
@@ -89,7 +90,9 @@ impl Bitmap {
     /// Returns new Bitmap created from a portion of another.
     pub fn cropped(&mut self, rect: Rect) -> ImageResult<Bitmap> {
         if !self.bounds().is_rect_visible(rect) {
-            Err(ImageError::DimensionError)
+            Err(ImageError::Limits(LimitError::from_kind(
+                LimitErrorKind::DimensionError,
+            )))
         } else {
             let rect = rect.scaled(self.scale).round();
             let cropped_image = self.image.crop(
@@ -377,7 +380,8 @@ impl Bitmap {
         use image::ImageFormat;
 
         let mut buffer: Vec<u8> = Vec::new();
-        self.image.write_to(&mut buffer, ImageFormat::PNG)?;
+        let mut cursor = std::io::Cursor::new(&mut buffer);
+        self.image.write_to(&mut cursor, ImageFormat::Png)?;
         unsafe {
             let data = NSData::dataWithBytes_length_(
                 nil,
@@ -418,11 +422,11 @@ fn colors_match(c1: Rgba<u8>, c2: Rgba<u8>, tolerance: f64) -> bool {
         return c1 == c2;
     }
 
-    let (r1, g1, b1, _) = c1.channels4();
-    let (r2, g2, b2, _) = c2.channels4();
-    let d1: f64 = (f64::from(r1) - f64::from(r2)).abs();
-    let d2: f64 = (f64::from(g1) - f64::from(g2)).abs();
-    let d3: f64 = (f64::from(b1) - f64::from(b2)).abs();
+    let c1_channels = c1.channels();
+    let c2_channels = c2.channels();
+    let d1: f64 = (f64::from(c1_channels[0]) - f64::from(c2_channels[0])).abs();
+    let d2: f64 = (f64::from(c1_channels[1]) - f64::from(c2_channels[1])).abs();
+    let d3: f64 = (f64::from(c1_channels[2]) - f64::from(c2_channels[2])).abs();
     (d1 * d1 + d2 * d2 + d3 * d3).sqrt() <= tolerance * MAX_TOLERANCE_DELTA
 }
 
@@ -436,7 +440,9 @@ pub fn capture_screen() -> ImageResult<Bitmap> {
 /// Returns a screengrab of the given portion of the main display.
 pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     if !screen::is_rect_visible(rect) {
-        Err(ImageError::DimensionError)
+        Err(ImageError::Limits(LimitError::from_kind(
+            LimitErrorKind::DimensionError,
+        )))
     } else {
         system_capture_screen_portion(rect)
     }
@@ -448,7 +454,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
         macos_load_cgimage(&image)
     } else {
-        Err(ImageError::NotEnoughData)
+        Err(ImageError::IoError(std::io::Error::other(
+            "Could not capture screen portion".to_string()
+        )))
     }
 }
 
@@ -491,7 +499,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
         })
     };
     if screen.is_null() {
-        return Err(ImageError::NotEnoughData);
+        return Err(ImageError::IoError(std::io::Error::other(
+            "Could not capture screen portion".to_string()
+        )));
     }
 
     // Get screen data in display device context.
@@ -533,7 +543,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
                 SRCCOPY,
             ) == 0
         {
-            return Err(ImageError::NotEnoughData);
+            return Err(ImageError::IoError(std::io::Error::other(
+                "Could not capture screen portion".to_string()
+            )));
         }
     };
 
@@ -578,7 +590,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
             )
         };
         if image_ptr.is_null() {
-            return Err(ImageError::NotEnoughData);
+            return Err(ImageError::IoError(std::io::Error::other(
+                "Could not capture screen portion".to_string()
+            )));
         }
         let image = unsafe { **image_ptr };
         let bytes_per_pixel = image.bits_per_pixel / 8;

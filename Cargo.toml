@@ -18,7 +18,7 @@ categories = [
 ]
 
 [dependencies]
-image = "0.22"
+image = "0.25.6"
 libc = "0.2"
 rand = "0.7"
 scopeguard = "1.1"
