@@ -143,8 +143,8 @@ fn system_alert(
     cancel_button: Option<&str>,
 ) -> Option<Response> {
     let button_list: &str = &cancel_button
-        .map(|cancel_text| format!("{}:2,{}:3", default_button, cancel_text))
-        .unwrap_or_else(|| format!("{}:2", default_button));
+        .map(|cancel_text| format!("{default_button}:2,{cancel_text}:3"))
+        .unwrap_or_else(|| format!("{default_button}:2"));
     let args = [
         msg,
         "-title",
