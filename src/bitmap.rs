@@ -374,23 +374,27 @@ impl Bitmap {
 
     #[cfg(target_os = "macos")]
     fn system_copy_to_pasteboard(&self) -> ImageResult<()> {
-        use cocoa::appkit::{NSImage, NSPasteboard};
-        use cocoa::base::nil;
-        use cocoa::foundation::{NSArray, NSData};
+        use objc2::AnyThread;
+        use objc2::rc::Retained;
+        use objc2::runtime::ProtocolObject;
+        use objc2_app_kit::{NSImage, NSPasteboard, NSPasteboardWriting};
+        use objc2_foundation::{NSData, NSArray};
         use image::ImageFormat;
 
         let mut buffer: Vec<u8> = Vec::new();
         let mut cursor = std::io::Cursor::new(&mut buffer);
         self.image.write_to(&mut cursor, ImageFormat::Png)?;
         unsafe {
-            let data = NSData::dataWithBytes_length_(
-                nil,
-                buffer.as_ptr() as *const std::os::raw::c_void,
-                buffer.len() as u64,
+            let data = NSData::dataWithBytes_length(
+                buffer.as_ptr() as *const std::ffi::c_void,
+                buffer.len(),
             );
-            let image = NSImage::initWithData_(NSImage::alloc(nil), data);
-            let objects = NSArray::arrayWithObject(nil, image);
-            let pasteboard = NSPasteboard::generalPasteboard(nil);
+            let image: Retained<NSImage> = NSImage::initWithData(NSImage::alloc(), &data).ok_or(
+                std::io::Error::other("Failed to create NSImage from NSData")
+            )?;
+            let writing: &ProtocolObject<dyn NSPasteboardWriting> = ProtocolObject::from_ref(&*image);
+            let objects = &NSArray::arrayWithObject(writing);
+            let pasteboard = NSPasteboard::generalPasteboard();
             pasteboard.clearContents();
             pasteboard.writeObjects(objects);
         }

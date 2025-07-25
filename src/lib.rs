@@ -23,7 +23,7 @@ extern crate rand;
 extern crate quickcheck;
 
 #[cfg(target_os = "macos")]
-extern crate cocoa;
+extern crate objc2;
 #[cfg(target_os = "macos")]
 extern crate core_foundation;
 #[cfg(target_os = "macos")]
