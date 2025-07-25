@@ -11,10 +11,10 @@
 //! It also defines functions for taking screenshots of the screen.
 extern crate image;
 
-use geometry::{Point, Rect, Size};
+use crate::geometry::{Point, Rect, Size};
 use image::{DynamicImage, GenericImage, GenericImageView, ImageError, ImageResult, Pixel, Rgba};
 use image::error::{LimitError, LimitErrorKind};
-use screen;
+use crate::screen;
 
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::CGRect;
@@ -24,7 +24,7 @@ use core_graphics::image::CGImage;
 use libc;
 
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 #[cfg(not(target_os = "macos"))]
 use scopeguard::guard;
 
@@ -658,8 +658,8 @@ fn macos_load_cgimage(image: &CGImage) -> ImageResult<Bitmap> {
 
 #[cfg(test)]
 mod tests {
-    use bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
-    use geometry::{Point, Rect, Size};
+    use crate::bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
+    use crate::geometry::{Point, Rect, Size};
     use image::{DynamicImage, Rgba, RgbaImage};
     use image::{GenericImage, GenericImageView};
     use quickcheck::{Arbitrary, Gen, TestResult};

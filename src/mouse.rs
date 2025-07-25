@@ -11,8 +11,8 @@
 //! Unless otherwise stated, coordinates are those of a screen coordinate
 //! system, where the origin is at the top left.
 
-use geometry::Point;
-use screen;
+use crate::geometry::Point;
+use crate::screen;
 use std::fmt;
 
 #[cfg(target_os = "macos")]
@@ -29,7 +29,7 @@ use core_graphics::geometry::CGPoint;
 use winapi::shared::minwindef::DWORD;
 
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Button {
@@ -375,10 +375,10 @@ extern "C" {
 
 #[cfg(test)]
 mod tests {
-    use geometry::Point;
-    use mouse;
+    use crate::geometry::Point;
+    use crate::mouse;
     use rand::{rng, Rng};
-    use screen;
+    use crate::screen;
 
     #[test]
     fn test_move_to() {

@@ -8,13 +8,13 @@
 //! This module contains functions for working with the screen.
 extern crate image;
 use self::image::{GenericImageView, ImageResult, Rgba};
-use bitmap;
-use geometry::{Point, Rect, Size};
+use crate::bitmap;
+use crate::geometry::{Point, Rect, Size};
 
 #[cfg(target_os = "macos")]
 use core_graphics::display::CGDisplay;
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 
 /// Returns the size of the main screen in points.
 pub fn size() -> Size {

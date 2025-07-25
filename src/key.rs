@@ -17,7 +17,7 @@ use core_graphics::event_source::CGEventSource;
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 
 use self::rand::Rng;
 
