@@ -140,7 +140,7 @@ pub fn type_string(string: &str, flags: &[Flag], wpm: f64, noise: f64) {
     for c in string.chars() {
         let tolerance = (noise * ms_per_character as f64).round() as u64;
         let noise = if tolerance > 0 {
-            rand::thread_rng().gen_range(0, tolerance)
+            rand::rng().random_range(0..tolerance)
         } else {
             0
         };

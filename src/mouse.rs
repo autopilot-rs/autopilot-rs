@@ -377,17 +377,17 @@ extern "C" {
 mod tests {
     use geometry::Point;
     use mouse;
-    use rand::{thread_rng, Rng};
+    use rand::{rng, Rng};
     use screen;
 
     #[test]
     fn test_move_to() {
         let size = screen::size();
         let scale = screen::scale();
-        let mut rng = thread_rng();
+        let mut rng = rng();
         for _ in 0..100 {
-            let x: f64 = rng.gen_range(0.0, size.width - 1.0);
-            let y: f64 = rng.gen_range(0.0, size.height - 1.0);
+            let x: f64 = rng.random_range(0.0..size.width - 1.0);
+            let y: f64 = rng.random_range(0.0..size.height - 1.0);
             let target = round_pt_nearest_hundredth(Point::new(x, y));
             mouse::move_to(target).expect("mouse::move_to call failed");
             std::thread::sleep(std::time::Duration::from_millis(10));

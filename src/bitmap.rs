@@ -663,17 +663,16 @@ mod tests {
     use image::{DynamicImage, Rgba, RgbaImage};
     use image::{GenericImage, GenericImageView};
     use quickcheck::{Arbitrary, Gen, TestResult};
-    use rand::prelude::SliceRandom;
-    use rand::{thread_rng, Rng};
+    use rand::{rng, Rng};
 
     impl Arbitrary for Bitmap {
-        fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
+        fn arbitrary(g: &mut Gen) -> Bitmap {
             let xs = Vec::<u8>::arbitrary(g);
-            let scale: f64 = *[1.0, 2.0].choose(g).unwrap();
+            let scale: &f64 = g.choose(&[1.0, 2.0]).unwrap();
             let width: f64 = (xs.len() as f64 / 4.0).floor().sqrt();
             let image = RgbaImage::from_raw(width as u32, width as u32, xs).unwrap();
             let dynimage = DynamicImage::ImageRgba8(image);
-            Bitmap::new(dynimage, Some(scale))
+            Bitmap::new(dynimage, Some(*scale))
         }
     }
 
@@ -704,9 +703,9 @@ mod tests {
                 return TestResult::discard();
             }
 
-            let mut rng = thread_rng();
-            let crop_scale: f64 = rng.gen_range(0.1, 1.0);
-            let offset_percentage: f64 = rng.gen_range(0.0, 1.0);
+            let mut rng = rng();
+            let crop_scale: f64 = rng.random_range(0.1..1.0);
+            let offset_percentage: f64 = rng.random_range(0.0..1.0);
             let mut cropped_width = (haystack.size.width * crop_scale).round();
             let mut cropped_height = (haystack.size.height * crop_scale).round();
             if cropped_width < 1.0 * haystack.scale {
