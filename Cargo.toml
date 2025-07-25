@@ -1,7 +1,7 @@
 [package]
 name = "autopilot"
 version = "0.4.1"
-edition = "2021"
+edition = "2024"
 authors = ["Michael Sanders <crates@michaelsande.rs>"]
 description = "A simple, cross-platform GUI automation library for Rust."
 homepage = "https://www.autopy.org"

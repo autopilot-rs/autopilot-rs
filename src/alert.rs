@@ -182,8 +182,8 @@ fn system_alert(
 }
 
 #[cfg(target_os = "macos")]
-extern "C" {
-    fn CFUserNotificationDisplayAlert(
+unsafe extern "C" {
+    unsafe fn CFUserNotificationDisplayAlert(
         timeout: CFTimeInterval,
         flags: CFOptionFlags,
         iconURL: CFURLRef,

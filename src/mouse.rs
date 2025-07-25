@@ -364,8 +364,8 @@ const X_BUTTON_SCROLL_UP: XButton = 4;
 const X_BUTTON_SCROLL_DOWN: XButton = 5;
 
 #[cfg(target_os = "linux")]
-extern "C" {
-    fn XTestFakeButtonEvent(
+unsafe extern "C" {
+    unsafe fn XTestFakeButtonEvent(
         display: *mut x11::xlib::Display,
         button: u32,
         is_press: i32,

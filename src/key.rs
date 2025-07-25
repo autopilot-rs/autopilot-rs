@@ -697,8 +697,8 @@ fn system_toggle<T: KeyCodeConvertible>(
 }
 
 #[cfg(target_os = "linux")]
-extern "C" {
-    fn XTestFakeKeyEvent(
+unsafe extern "C" {
+    unsafe fn XTestFakeKeyEvent(
         display: *mut x11::xlib::Display,
         keycode: u8,
         is_press: i32,
