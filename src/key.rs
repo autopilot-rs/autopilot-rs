@@ -403,15 +403,14 @@ fn system_toggle<T: KeyCodeConvertible>(
     use core_graphics::event::{CGEventTapLocation, CGEventType};
     let source = CGEventSource::new(HIDSystemState).unwrap();
 
-    if flags.is_empty() {
-        if let Some(character) = key.character() {
+    if flags.is_empty()
+        && let Some(character) = key.character() {
             let mut buf = [0; 2];
             let event = CGEvent::new_keyboard_event(source, 0, down).unwrap();
             event.set_string_from_utf16_unchecked(character.encode_utf16(&mut buf));
             event.post(CGEventTapLocation::HID);
             return;
         }
-    }
 
     let code = key.code();
     if code != 0 {
