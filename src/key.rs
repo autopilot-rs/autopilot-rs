@@ -17,7 +17,7 @@ use core_graphics::event_source::CGEventSource;
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::CGEventSourceStateID::HIDSystemState;
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 
 use self::rand::Rng;
 
@@ -140,7 +140,7 @@ pub fn type_string(string: &str, flags: &[Flag], wpm: f64, noise: f64) {
     for c in string.chars() {
         let tolerance = (noise * ms_per_character as f64).round() as u64;
         let noise = if tolerance > 0 {
-            rand::thread_rng().gen_range(0, tolerance)
+            rand::rng().random_range(0..tolerance)
         } else {
             0
         };
@@ -697,8 +697,8 @@ fn system_toggle<T: KeyCodeConvertible>(
 }
 
 #[cfg(target_os = "linux")]
-extern "C" {
-    fn XTestFakeKeyEvent(
+unsafe extern "C" {
+    unsafe fn XTestFakeKeyEvent(
         display: *mut x11::xlib::Display,
         keycode: u8,
         is_press: i32,

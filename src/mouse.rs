@@ -11,8 +11,8 @@
 //! Unless otherwise stated, coordinates are those of a screen coordinate
 //! system, where the origin is at the top left.
 
-use geometry::Point;
-use screen;
+use crate::geometry::Point;
+use crate::screen;
 use std::fmt;
 
 #[cfg(target_os = "macos")]
@@ -29,7 +29,7 @@ use core_graphics::geometry::CGPoint;
 use winapi::shared::minwindef::DWORD;
 
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Button {
@@ -364,8 +364,8 @@ const X_BUTTON_SCROLL_UP: XButton = 4;
 const X_BUTTON_SCROLL_DOWN: XButton = 5;
 
 #[cfg(target_os = "linux")]
-extern "C" {
-    fn XTestFakeButtonEvent(
+unsafe extern "C" {
+    unsafe fn XTestFakeButtonEvent(
         display: *mut x11::xlib::Display,
         button: u32,
         is_press: i32,
@@ -375,19 +375,19 @@ extern "C" {
 
 #[cfg(test)]
 mod tests {
-    use geometry::Point;
-    use mouse;
-    use rand::{thread_rng, Rng};
-    use screen;
+    use crate::geometry::Point;
+    use crate::mouse;
+    use rand::{rng, Rng};
+    use crate::screen;
 
     #[test]
     fn test_move_to() {
         let size = screen::size();
         let scale = screen::scale();
-        let mut rng = thread_rng();
+        let mut rng = rng();
         for _ in 0..100 {
-            let x: f64 = rng.gen_range(0.0, size.width - 1.0);
-            let y: f64 = rng.gen_range(0.0, size.height - 1.0);
+            let x: f64 = rng.random_range(0.0..size.width - 1.0);
+            let y: f64 = rng.random_range(0.0..size.height - 1.0);
             let target = round_pt_nearest_hundredth(Point::new(x, y));
             mouse::move_to(target).expect("mouse::move_to call failed");
             std::thread::sleep(std::time::Duration::from_millis(10));

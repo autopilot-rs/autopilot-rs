@@ -11,9 +11,10 @@
 //! It also defines functions for taking screenshots of the screen.
 extern crate image;
 
-use geometry::{Point, Rect, Size};
+use crate::geometry::{Point, Rect, Size};
 use image::{DynamicImage, GenericImage, GenericImageView, ImageError, ImageResult, Pixel, Rgba};
-use screen;
+use image::error::{LimitError, LimitErrorKind};
+use crate::screen;
 
 #[cfg(target_os = "macos")]
 use core_graphics::geometry::CGRect;
@@ -23,7 +24,7 @@ use core_graphics::image::CGImage;
 use libc;
 
 #[cfg(target_os = "linux")]
-use internal;
+use crate::internal;
 #[cfg(not(target_os = "macos"))]
 use scopeguard::guard;
 
@@ -89,7 +90,9 @@ impl Bitmap {
     /// Returns new Bitmap created from a portion of another.
     pub fn cropped(&mut self, rect: Rect) -> ImageResult<Bitmap> {
         if !self.bounds().is_rect_visible(rect) {
-            Err(ImageError::DimensionError)
+            Err(ImageError::Limits(LimitError::from_kind(
+                LimitErrorKind::DimensionError,
+            )))
         } else {
             let rect = rect.scaled(self.scale).round();
             let cropped_image = self.image.crop(
@@ -371,22 +374,27 @@ impl Bitmap {
 
     #[cfg(target_os = "macos")]
     fn system_copy_to_pasteboard(&self) -> ImageResult<()> {
-        use cocoa::appkit::{NSImage, NSPasteboard};
-        use cocoa::base::nil;
-        use cocoa::foundation::{NSArray, NSData};
+        use objc2::AnyThread;
+        use objc2::rc::Retained;
+        use objc2::runtime::ProtocolObject;
+        use objc2_app_kit::{NSImage, NSPasteboard, NSPasteboardWriting};
+        use objc2_foundation::{NSData, NSArray};
         use image::ImageFormat;
 
         let mut buffer: Vec<u8> = Vec::new();
-        self.image.write_to(&mut buffer, ImageFormat::PNG)?;
+        let mut cursor = std::io::Cursor::new(&mut buffer);
+        self.image.write_to(&mut cursor, ImageFormat::Png)?;
         unsafe {
-            let data = NSData::dataWithBytes_length_(
-                nil,
-                buffer.as_ptr() as *const std::os::raw::c_void,
-                buffer.len() as u64,
+            let data = NSData::dataWithBytes_length(
+                buffer.as_ptr() as *const std::ffi::c_void,
+                buffer.len(),
             );
-            let image = NSImage::initWithData_(NSImage::alloc(nil), data);
-            let objects = NSArray::arrayWithObject(nil, image);
-            let pasteboard = NSPasteboard::generalPasteboard(nil);
+            let image: Retained<NSImage> = NSImage::initWithData(NSImage::alloc(), &data).ok_or(
+                std::io::Error::other("Failed to create NSImage from NSData")
+            )?;
+            let writing: &ProtocolObject<dyn NSPasteboardWriting> = ProtocolObject::from_ref(&*image);
+            let objects = &NSArray::arrayWithObject(writing);
+            let pasteboard = NSPasteboard::generalPasteboard();
             pasteboard.clearContents();
             pasteboard.writeObjects(objects);
         }
@@ -418,11 +426,11 @@ fn colors_match(c1: Rgba<u8>, c2: Rgba<u8>, tolerance: f64) -> bool {
         return c1 == c2;
     }
 
-    let (r1, g1, b1, _) = c1.channels4();
-    let (r2, g2, b2, _) = c2.channels4();
-    let d1: f64 = (f64::from(r1) - f64::from(r2)).abs();
-    let d2: f64 = (f64::from(g1) - f64::from(g2)).abs();
-    let d3: f64 = (f64::from(b1) - f64::from(b2)).abs();
+    let c1_channels = c1.channels();
+    let c2_channels = c2.channels();
+    let d1: f64 = (f64::from(c1_channels[0]) - f64::from(c2_channels[0])).abs();
+    let d2: f64 = (f64::from(c1_channels[1]) - f64::from(c2_channels[1])).abs();
+    let d3: f64 = (f64::from(c1_channels[2]) - f64::from(c2_channels[2])).abs();
     (d1 * d1 + d2 * d2 + d3 * d3).sqrt() <= tolerance * MAX_TOLERANCE_DELTA
 }
 
@@ -436,7 +444,9 @@ pub fn capture_screen() -> ImageResult<Bitmap> {
 /// Returns a screengrab of the given portion of the main display.
 pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     if !screen::is_rect_visible(rect) {
-        Err(ImageError::DimensionError)
+        Err(ImageError::Limits(LimitError::from_kind(
+            LimitErrorKind::DimensionError,
+        )))
     } else {
         system_capture_screen_portion(rect)
     }
@@ -448,7 +458,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
         macos_load_cgimage(&image)
     } else {
-        Err(ImageError::NotEnoughData)
+        Err(ImageError::IoError(std::io::Error::other(
+            "Could not capture screen portion".to_string()
+        )))
     }
 }
 
@@ -491,7 +503,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
         })
     };
     if screen.is_null() {
-        return Err(ImageError::NotEnoughData);
+        return Err(ImageError::IoError(std::io::Error::other(
+            "Could not capture screen portion".to_string()
+        )));
     }
 
     // Get screen data in display device context.
@@ -533,7 +547,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
                 SRCCOPY,
             ) == 0
         {
-            return Err(ImageError::NotEnoughData);
+            return Err(ImageError::IoError(std::io::Error::other(
+                "Could not capture screen portion".to_string()
+            )));
         }
     };
 
@@ -578,7 +594,9 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
             )
         };
         if image_ptr.is_null() {
-            return Err(ImageError::NotEnoughData);
+            return Err(ImageError::IoError(std::io::Error::other(
+                "Could not capture screen portion".to_string()
+            )));
         }
         let image = unsafe { **image_ptr };
         let bytes_per_pixel = image.bits_per_pixel / 8;
@@ -644,22 +662,21 @@ fn macos_load_cgimage(image: &CGImage) -> ImageResult<Bitmap> {
 
 #[cfg(test)]
 mod tests {
-    use bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
-    use geometry::{Point, Rect, Size};
+    use crate::bitmap::{capture_screen, capture_screen_portion, colors_match, Bitmap};
+    use crate::geometry::{Point, Rect, Size};
     use image::{DynamicImage, Rgba, RgbaImage};
     use image::{GenericImage, GenericImageView};
     use quickcheck::{Arbitrary, Gen, TestResult};
-    use rand::prelude::SliceRandom;
-    use rand::{thread_rng, Rng};
+    use rand::{rng, Rng};
 
     impl Arbitrary for Bitmap {
-        fn arbitrary<G: Gen>(g: &mut G) -> Bitmap {
+        fn arbitrary(g: &mut Gen) -> Bitmap {
             let xs = Vec::<u8>::arbitrary(g);
-            let scale: f64 = *[1.0, 2.0].choose(g).unwrap();
+            let scale: &f64 = g.choose(&[1.0, 2.0]).unwrap();
             let width: f64 = (xs.len() as f64 / 4.0).floor().sqrt();
             let image = RgbaImage::from_raw(width as u32, width as u32, xs).unwrap();
             let dynimage = DynamicImage::ImageRgba8(image);
-            Bitmap::new(dynimage, Some(scale))
+            Bitmap::new(dynimage, Some(*scale))
         }
     }
 
@@ -690,9 +707,9 @@ mod tests {
                 return TestResult::discard();
             }
 
-            let mut rng = thread_rng();
-            let crop_scale: f64 = rng.gen_range(0.1, 1.0);
-            let offset_percentage: f64 = rng.gen_range(0.0, 1.0);
+            let mut rng = rng();
+            let crop_scale: f64 = rng.random_range(0.1..1.0);
+            let offset_percentage: f64 = rng.random_range(0.0..1.0);
             let mut cropped_width = (haystack.size.width * crop_scale).round();
             let mut cropped_height = (haystack.size.height * crop_scale).round();
             if cropped_width < 1.0 * haystack.scale {

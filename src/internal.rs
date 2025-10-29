@@ -5,7 +5,7 @@
 // https://opensource.org/licenses/MIT>, at your option. This file may not be
 // copied, modified, or distributed except according to those terms.
 #[cfg(target_os = "macos")]
-use geometry::{Point, Rect, Size};
+use crate::geometry::{Point, Rect, Size};
 
 #[cfg(target_os = "macos")]
 use core_graphics::base::CGFloat;
