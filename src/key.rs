@@ -231,7 +231,7 @@ fn char_to_key_code(character: char) -> XKeyCode {
         '}' => XKeyCode::from(x11::keysym::XK_braceright),
         '~' => XKeyCode::from(x11::keysym::XK_asciitilde),
         _ => unsafe {
-            let mut buf = [0; 2];
+            let mut buf = [0u8; 5];
             x11::xlib::XStringToKeysym(
                 character.encode_utf8(&mut buf).as_ptr() as *const libc::c_char
             ) as XKeyCode
