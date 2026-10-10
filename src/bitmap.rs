@@ -455,6 +455,13 @@ pub fn capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 #[cfg(target_os = "macos")]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     use core_graphics::display::CGDisplay;
+    let scale = screen::scale();
+    let mut rect = rect.scaled(scale).round();
+    let size_pixels = screen::size().scaled(scale).round();
+    rect.size.width = rect.size.width.min(size_pixels.width - rect.origin.x);
+    rect.size.height = rect.size.height.min(size_pixels.height - rect.origin.y);
+    // CoreGraphics takes points, but the capture must align to whole pixels.
+    let rect = rect.scaled(1.0 / scale);
     if let Some(image) = CGDisplay::screenshot(CGRect::from(rect), 0, 0, 0) {
         macos_load_cgimage(&image)
     } else {
@@ -476,7 +483,10 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     use winapi::um::wingdi::{BITMAPINFO, BITMAPINFOHEADER, BI_RGB};
     use winapi::um::winuser::{GetDC, ReleaseDC};
 
-    let rect = rect.scaled(screen::scale());
+    let mut rect = rect.scaled(screen::scale()).round();
+    let size_pixels = screen::size().scaled(screen::scale()).round();
+    rect.size.width = rect.size.width.min(size_pixels.width - rect.origin.x);
+    rect.size.height = rect.size.height.min(size_pixels.height - rect.origin.y);
     let bytes_per_pixel: usize = 4;
     let bytewidth = rect.size.width as usize * bytes_per_pixel;
     let bitmap_info = BITMAPINFO {
@@ -570,7 +580,10 @@ fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
 #[cfg(target_os = "linux")]
 fn system_capture_screen_portion(rect: Rect) -> ImageResult<Bitmap> {
     internal::X_MAIN_DISPLAY.with(|display| {
-        let scaled_rect = rect.scaled(screen::scale());
+        let mut scaled_rect = rect.scaled(screen::scale()).round();
+        let size_pixels = screen::size().scaled(screen::scale()).round();
+        scaled_rect.size.width = scaled_rect.size.width.min(size_pixels.width - scaled_rect.origin.x);
+        scaled_rect.size.height = scaled_rect.size.height.min(size_pixels.height - scaled_rect.origin.y);
         let root_window = unsafe {
             guard(x11::xlib::XDefaultRootWindow(display.as_ptr()), |w| {
                 x11::xlib::XDestroyWindow(display.as_ptr(), w);
@@ -694,11 +707,33 @@ mod tests {
 
     #[test]
     fn test_capture_screen_portion() {
-        let rect = Rect::new(Point::new(100.0, 100.0), Size::new(100.0, 100.0));
-        let portion: Bitmap = capture_screen_portion(rect).unwrap();
         let mut uncropped: Bitmap = capture_screen().unwrap();
-        let cropped: Bitmap = uncropped.cropped(rect).unwrap();
-        assert_eq!(portion, cropped)
+        let size_pixels = crate::screen::size().scaled(crate::screen::scale()).round();
+        assert_eq!(uncropped.image.width(), size_pixels.width as u32);
+        assert_eq!(uncropped.image.height(), size_pixels.height as u32);
+        for offset in [100.0, 100.25, 100.75] {
+            let rect = Rect::new(Point::new(offset, offset), Size::new(offset, offset));
+            let portion: Bitmap = capture_screen_portion(rect).unwrap();
+            let cropped: Bitmap = uncropped.cropped(rect).unwrap();
+            assert_eq!(portion.image.dimensions(), cropped.image.dimensions());
+            assert_eq!(portion.image, cropped.image);
+        }
+
+        // rounding a last-point capture must not extend beyond the screen
+        let size = crate::screen::size();
+        let rect = Rect::new(
+            Point::new(size.width - 1.0, size.height - 1.0),
+            Size::new(1.0, 1.0),
+        );
+        let portion = capture_screen_portion(rect).unwrap();
+        let size_pixels = rect.scaled(crate::screen::scale()).round();
+        let cropped = uncropped.image.crop_imm(
+            size_pixels.origin.x as u32,
+            size_pixels.origin.y as u32,
+            size_pixels.size.width as u32,
+            size_pixels.size.height as u32,
+        );
+        assert_eq!(portion.image, cropped);
     }
 
     quickcheck! {
